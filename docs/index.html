@@ -272,7 +272,7 @@ function buildDrift(){
 
 /* ---------- key prompt ---------- */
 function ctaClick(){
-  if (!FILES) return toast('Photo downloads open very soon — we'll send you your personal link');
+  if (!FILES) return toast("Photo downloads open very soon — we'll send you your personal link");
   guest ? openGallery() : openKeybox();
 }
 function openKeybox(){ $('#keyerr').textContent = ''; $('#keybox').classList.add('open'); setTimeout(() => $('#keyin').focus(), 50); }
