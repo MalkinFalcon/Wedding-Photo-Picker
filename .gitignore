@@ -3,3 +3,6 @@
 export/
 __pycache__/
 guests.csv
+_out/
+photo_ids.json
+*.tmp
