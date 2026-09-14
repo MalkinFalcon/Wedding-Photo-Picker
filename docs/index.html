@@ -211,8 +211,9 @@ const sel = new Set();
 const AMBIENT_TOTAL = 20, AMBIENT_GUEST_MAX = 10, CLIENT_ZIP_MAX = 400e6;
 
 (async function init(){
-  const [cfg, sc] = await Promise.all([fetch('config.json').then(r => r.json()),
-                                       fetch('showcase.json').then(r => r.json())]);
+  const fresh = {cache: 'no-store'};                    // never let a CDN-cached config point at the wrong place
+  const [cfg, sc] = await Promise.all([fetch('config.json', fresh).then(r => r.json()),
+                                       fetch('showcase.json', fresh).then(r => r.json())]);
   FILES = (new URLSearchParams(location.search).get('files') || cfg.files || '').replace(/\/$/, '');
   showcase = sc;
   ambient(); wire(); requestAnimationFrame(tick);
