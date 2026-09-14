@@ -110,16 +110,21 @@ def main():
 
     state    = load_json(os.path.join(APP, 'state.json'), {})
     manifest = {r['id']: r['src'] for r in load_json(os.path.join(APP, 'manifest.json'), [])}
-    assign   = {k: v for k, v in state.get('assign', {}).items() if k in manifest and v}
-    show     = [k for k in sorted(state.get('show', {})) if k in manifest]
+    SHOW     = 'Showcase'                      # the website group in the picker; W toggles it
+    raw      = {k: v for k, v in state.get('assign', {}).items() if k in manifest and v}
+    show     = sorted({k for k in state.get('show', {}) if k in manifest} | {k for k, v in raw.items() if SHOW in v})
     src_of   = lambda pid: os.path.join(WEDDING, manifest[pid].replace('/', os.sep))
 
     # --- guests: fill blank keys, warn about mismatches -------------------------------
     guests = read_guests()
+    wanted = {r['app_name'] for r in guests}
+    # only photos allocated to a real guest need web assets / uploading
+    assign = {k: [n for n in v if n != SHOW] for k, v in raw.items()}
+    assign = {k: v for k, v in assign.items() if any(n in wanted for n in v)}
     counts = {}
     for pid, names in assign.items():
         for n in names: counts[n] = counts.get(n, 0) + 1
-    known = set(state.get('people', []))
+    known = set(state.get('people', [])) - {SHOW}
     used = {r['url_key'] for r in guests if r['url_key']}
     for r in guests:
         if not r['display_name']: r['display_name'] = r['app_name']
