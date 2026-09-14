@@ -29,7 +29,7 @@
            text-shadow:0 2px 30px #000c,0 0 80px #0009}
   #hero h1 span{font-style:normal;font-weight:600}
   #sub{margin-top:10px;color:var(--dim);letter-spacing:.32em;text-transform:uppercase;font-size:12px;text-shadow:0 1px 12px #000;white-space:nowrap}
-  #greet{margin-top:14px;font:italic 400 clamp(22px,3vw,30px)/1.2 "Cormorant Garamond",serif;color:var(--ink);
+  #greet{margin-top:0;font:italic 400 clamp(40px,7vw,72px)/1.1 "Cormorant Garamond",serif;color:var(--ink);
          text-shadow:0 2px 20px #000c;display:none}
   #greet b{font-style:normal;font-weight:600;color:var(--accent)}
   #greet small{display:block;font-size:.72em;color:var(--dim);margin-top:4px}
@@ -45,8 +45,8 @@
   @keyframes pulse{0%{box-shadow:0 10px 30px #0009,0 0 0 0 #f3ede466}70%{box-shadow:0 10px 30px #0009,0 0 0 14px #f3ede400}100%{box-shadow:0 10px 30px #0009,0 0 0 0 #f3ede400}}
   #tophint{position:fixed;top:max(14px,env(safe-area-inset-top));left:0;right:0;z-index:21;display:none;justify-content:center;
            pointer-events:none}
-  #tophint span{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;background:#15120ecc;
-                color:var(--dim);font-size:11.5px;letter-spacing:.06em;backdrop-filter:blur(8px);border:1px solid #ffffff14}
+  #tophint span{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:999px;background:#1f1a15;
+                color:var(--ink);font-size:11.5px;letter-spacing:.06em;border:1px solid #ffffff22;box-shadow:0 4px 18px #000a}
   #tophint svg{width:15px;height:15px}
   #hero.gone ~ #tophint{opacity:0}
   #cta.busy{opacity:.6;pointer-events:none}
@@ -78,7 +78,7 @@
     #hero::before{width:100vw;height:60vh;bottom:0;border-radius:0;
       background:linear-gradient(to bottom,transparent,#15120ecc 45%,#15120ef5)}
     #hero h1{font-size:clamp(40px,12vw,64px)} #sub{font-size:10.5px;letter-spacing:.22em} #cta{margin-top:18px}
-    #greet{font-size:23px;margin-top:8px}
+    #greet{font-size:clamp(36px,11vw,52px)}
     #hint{display:none} #tophint{display:flex;transition:opacity .4s}
   }
 
@@ -298,9 +298,11 @@ async function loadGuest(k){
     guest = await r.json(); key = k; pendingKey = '';
     store.set('key', k);
     try { history.replaceState(null, '', location.pathname); } catch (e) {}
-    $('#greet').innerHTML = `Hi <b>${esc(guest.name)}</b><small>we found you in ${guest.count} photo${guest.count === 1 ? '' : 's'}</small>`;
-    $('#greet').classList.add('on');
-    $('#ctatxt').textContent = 'See my photos';
+    $('#hero h1').style.display = 'none';                     // whose wedding it is goes without saying
+    $('#greet').innerHTML = `Hi <b>${esc(guest.name)}</b>`;
+    $('#greet').classList.add('on'); $('#hero').insertBefore($('#greet'), $('#sub'));
+    $('#sub').textContent = 'Thanks for celebrating with us';
+    $('#ctatxt').textContent = `See your photos (${guest.count})`;
     $('#hint').textContent = 'Drag a photo to throw it';
     renderGallery(); ambient();
     if (GUESTBOOK){ $('#gbBtn').classList.add('on'); $('#gbBtn2').classList.add('on'); }
