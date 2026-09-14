@@ -314,8 +314,9 @@ const AMBIENT_TOTAL = 20, AMBIENT_GUEST_MAX = 10, CLIENT_ZIP_MAX = 400e6;
   FILES = (new URLSearchParams(location.search).get('files') || cfg.files || FILES_FALLBACK).replace(/\/$/, '');
   GUESTBOOK = (new URLSearchParams(location.search).get('guestbook') || cfg.guestbook || '').replace(/\/$/, '');
   ambient(); wire(); requestAnimationFrame(tick);
-  // Share-sheet / multi-download saving is parked for now (uneven across phones); zips are the primary path.
-  // To re-enable: add 'canshare' + 'android'/'ios' to <body> here.
+  // Zips are the primary path everywhere. iPhone additionally gets the share sheet for selections up to 20
+  // (one tap, one batch - the only multi-save that behaves the same every time).
+  try { if (isMobile() && /iPhone|iPad|iPod/.test(navigator.userAgent) && navigator.canShare && navigator.canShare({files: [new File(['x'], 'x.jpg', {type: 'image/jpeg'})]})) document.body.classList.add('ios'); } catch (e) {}
   PLATFORM = document.body.classList.contains('android') ? 'android' : document.body.classList.contains('ios') ? 'ios' : 'desktop';
   const fromHash = decodeURIComponent(location.hash.replace(/^#\/?(k=)?/, '')).trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
   pendingKey = fromHash;
@@ -533,7 +534,7 @@ function reveal(){
     $('#fade').classList.add('on');
     setTimeout(() => { showGallery(); setTimeout(() => $('#fade').classList.remove('on'), 150); if (first) confetti(); }, 420);
   };
-  if (isMobile()){ reel.run = {t0: performance.now(), dur: 1e9, pps: 1}; countdown(secs, () => { reel.run = null; finish(); }); }   // 10 photos in the 10 s
+  if (isMobile()){ reel.run = {t0: performance.now(), dur: 1e9, pps: 1.3}; countdown(secs, () => { reel.run = null; finish(); }); }   // ~13 photos in the 10 s
   else countdown(secs, () => gatherCards(900, () => { finish(); setTimeout(() => buildDrift(ambientList()), 800); }));
 }
 function countdown(secs, done){
@@ -582,11 +583,11 @@ function renderGallery(){
   $('#galgrid').innerHTML = guest.photos.map((p, i) =>
     `<div class="g" data-i="${i}"><img src="${url('t', p)}" alt="" loading="lazy"><span class="tick">✓</span></div>`).join('');
   const web = guest.wbytes != null;
-  $('#dlall').textContent = `Download all (${mb(web ? guest.wbytes : guest.bytes)})`;
+  $('#dlall').textContent = `Download all · .zip (${mb(web ? guest.wbytes : guest.bytes)})`;
   const ap = $('#allPhotos'); ap.dataset.label = PLATFORM === 'android' ? `Save all ${guest.count} to phone` : `Save all ${guest.count} to Photos`; ap.textContent = ap.dataset.label; ap.disabled = false; batchQ.all = null;
   $('#galhint').innerHTML = document.body.classList.contains('canshare')
     ? `Select photos to save just a few · <button class="lnk" id="dlallz">or zip · ${mb(web ? guest.wbytes : guest.bytes)}</button>`
-    : 'Select photos to download just a few';
+    : (isMobile() ? 'Downloads arrive as one .zip — open it from your Files app to unpack the photos' : 'Select photos to download just a few');
   const az = $('#dlallz'); if (az) az.addEventListener('click', () => $('#dlall').click());
   sel.clear(); show(0, true); updateSel();
 }
@@ -611,8 +612,9 @@ function updateSel(){
   const bytes = [...sel].reduce((s, i) => s + guest.photos[i].bytes, 0);
   $('#selrow').classList.toggle('on', sel.size > 0);
   const lbytes = [...sel].reduce((s, i) => s + (guest.photos[i].lb || guest.photos[i].bytes), 0);
-  $('#dlsel').textContent = `Download ${sel.size} (${mb(lbytes)})`;
-  const sp = $('#selPhotos'); if (!batchQ.sel){ sp.dataset.label = PLATFORM === 'android' ? `Save ${sel.size} to phone` : `Save ${sel.size} to Photos`; sp.textContent = sp.dataset.label; }
+  $('#dlsel').textContent = `Download ${sel.size} · .zip (${mb(lbytes)})`;
+  const sp = $('#selPhotos'); if (!batchQ.sel){ sp.dataset.label = `Save ${sel.size} to Photos`; sp.textContent = sp.dataset.label; }
+  sp.style.display = (PLATFORM === 'ios' && sel.size > 0 && sel.size <= 20) ? 'inline-flex' : 'none';
   const origLink = '';
   const zipLink = document.body.classList.contains('canshare') ? `<button class="lnk" id="dlselz">zip · ${mb(lbytes)}</button>` : '';
   $('#selinfo').innerHTML = `<b>${sel.size} selected</b>${zipLink}${origLink}`;
