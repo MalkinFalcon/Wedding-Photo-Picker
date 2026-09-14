@@ -94,6 +94,13 @@
   .overlay{position:fixed;inset:0;z-index:40;background:#15120ef2;backdrop-filter:blur(14px);display:flex;
            opacity:0;visibility:hidden;pointer-events:none;transition:opacity .55s ease,visibility 0s .55s}
   .overlay.open{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .55s ease,visibility 0s}
+  #count{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;flex-direction:column;
+         cursor:pointer;-webkit-tap-highlight-color:transparent}
+  #count.open{display:flex}
+  #count b{font:italic 400 clamp(120px,32vw,220px)/1 "Cormorant Garamond",serif;color:var(--ink);
+           text-shadow:0 4px 40px #000,0 0 120px #000c;animation:tickin 1s ease-out both}
+  #count small{margin-top:6px;color:var(--dim);font-size:12px;letter-spacing:.16em;text-transform:uppercase;text-shadow:0 1px 8px #000}
+  @keyframes tickin{0%{opacity:0;transform:scale(1.25)}18%{opacity:1;transform:scale(1)}70%{opacity:1}100%{opacity:0;transform:scale(.92)}}
   #fade{position:fixed;inset:0;z-index:35;background:#000;opacity:0;pointer-events:none;transition:opacity .4s}
   #fade.on{opacity:1}
   #confetti{position:fixed;inset:0;z-index:48;pointer-events:none}
@@ -214,6 +221,7 @@
 
 <div id="drift"></div>
 <div id="reel"><div id="strip"><div id="track"></div></div></div>
+<div id="count"><b>10</b><small>tap to skip</small></div>
 <div id="fade"></div>
 <canvas id="confetti"></canvas>
 
@@ -398,14 +406,14 @@ function reelTick(dt){
   } else if (reel.run){                                      // the fly-through: brisk, steady, readable
     const p = (now - reel.run.t0) / reel.run.dur;
     reel.speed += (reel.run.pps * photoH - reel.speed) * Math.min(1, dt * 5);
-    if (p >= 1){ const d = reel.run.done; reel.run = null; d && d(); }
+    if (p >= 1 && reel.run.done){ const d = reel.run.done; reel.run = null; d(); }
   } else if (now < reel.coast){                              // momentum after a flick, easing back to base
     reel.speed += (base - reel.speed) * Math.min(1, dt * 1.5);
   } else {
     reel.speed += (base - reel.speed) * Math.min(1, dt * 4);
   }
   reel.y = ((reel.y + reel.speed * dt) % half + half) % half;
-  t.style.transform = `translateY(${-reel.y}px)`;
+  t.style.transform = `translate3d(0,${-reel.y}px,0)`;
 }
 function wireReel(){
   const el = $('#reel');
@@ -489,7 +497,8 @@ function driftTick(dt){
       continue;
     }
     if (!c.hover && !c.drag){
-      c.x += c.vx * dt; c.y += c.vy * dt; c.rot += c.rotv * dt;
+      const k = countdown_state.on ? 4 : 1;
+      c.x += c.vx * k * dt; c.y += c.vy * k * dt; c.rot += c.rotv * k * dt;
       if (c.x < -c.w * .35) c.vx = Math.abs(c.vx);
       if (c.x > W - c.w * .65) c.vx = -Math.abs(c.vx);
       if (c.y < -c.h * .35) c.vy = Math.abs(c.vy);
@@ -515,19 +524,33 @@ function tick(now){
 }
 
 /* ================= the reveal ================= */
+const countdown_state = { on: false, t: null };
 async function ctaClick(){
   if (!guest && pendingKey && await loadGuest(pendingKey)) return reveal();
   if (guest) reveal();
 }
 function reveal(){
   $('#hero').classList.add('gone');
-  const first = !revealed;
+  const first = !revealed, secs = first ? 10 : 5;
   const finish = () => {
     $('#fade').classList.add('on');
     setTimeout(() => { showGallery(); setTimeout(() => $('#fade').classList.remove('on'), 150); if (first) confetti(); }, 420);
   };
-  if (isMobile()) flyThrough(first ? 15 : 6, first ? 4.2 : 1.8, finish);   // ~15 photos in ~4 s, readable, no blur
-  else gatherCards(first ? 1500 : 900, () => { finish(); setTimeout(() => buildDrift(ambientList()), 800); });
+  if (isMobile()){ reel.run = {t0: performance.now(), dur: 1e9, pps: 2}; countdown(secs, () => { reel.run = null; finish(); }); }
+  else countdown(secs, () => gatherCards(900, () => { finish(); setTimeout(() => buildDrift(ambientList()), 800); }));
+}
+function countdown(secs, done){
+  const el = $('#count'), num = el.querySelector('b');
+  let n = secs; countdown_state.on = true; el.classList.add('open');
+  const tick = () => {
+    if (!countdown_state.on) return;
+    num.textContent = n; num.style.animation = 'none'; void num.offsetWidth; num.style.animation = '';
+    if (n === 0){ countdown_state.t = setTimeout(end, 700); return; }
+    n--; countdown_state.t = setTimeout(tick, 1000);
+  };
+  const end = () => { if (!countdown_state.on) return; countdown_state.on = false; clearTimeout(countdown_state.t); el.classList.remove('open'); done(); };
+  el.onclick = end;
+  tick();
 }
 function showGallery(){ revealed = true; $('#gal').classList.add('open'); }
 function closeGallery(){ $('#gal').classList.remove('open'); $('#hero').classList.remove('gone'); }
