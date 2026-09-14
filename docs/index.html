@@ -169,8 +169,9 @@
     #galgrid{width:auto;min-width:0;flex:1;min-height:0;border-left:0;border-top:1px solid #ffffff10;
              grid-template-columns:repeat(4,1fr);gap:3px;padding:4px}
     .g{border-radius:2px}
-    #galbar{display:none} #vclose{display:block;top:9px;left:10px;right:auto;width:36px;height:36px}
-    #vbar{order:-1;padding:10px 12px 10px 54px;justify-content:flex-start;border-top:0;border-bottom:1px solid #ffffff10}
+    #galbar{display:none} #vclose{display:none}
+    #vbar{order:-1;padding:10px 10px;gap:8px;border-top:0;border-bottom:1px solid #ffffff10}
+    #vbar .btn{flex:1;text-align:center}
     #vn{display:none}
     #galfoot{gap:8px;padding:10px 12px} .btn{padding:11px 13px;font-size:11px}
     #galfoot .row{justify-content:stretch} #galfoot .row .btn{flex:1;text-align:center}
@@ -603,8 +604,9 @@ function countdown(secs, done){
   skip.onclick = end;
   tick();
 }
-function showGallery(){ revealed = true; $('#gal').classList.add('open'); }
+function showGallery(){ revealed = true; $('#gal').classList.add('open'); try { history.pushState({gal: 1}, ''); } catch (e) {} }
 function closeGallery(){ $('#gal').classList.remove('open'); $('#hero').classList.remove('gone'); }
+addEventListener('popstate', () => { if ($('#gal').classList.contains('open')) closeGallery(); });
 
 /* ================= confetti ================= */
 function confetti(){
