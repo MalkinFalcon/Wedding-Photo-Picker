@@ -42,6 +42,7 @@ SHOWCASE_PX  = 1600
 PREVIEW_PX   = 1600
 LARGE_PX     = 3000                   # the default download; q88 keeps the biggest guest zip ~85 MB (<100 MB for everyone)
 THUMB_PX     = 480
+REEL_PX      = 1000                   # what the landing reel / polaroids actually need on a phone
 ALPHABET     = 'abcdefghjkmnpqrstuvwxyz23456789'   # no i l o 0 1 - these get read aloud / typed
 DL_PREFIX    = 'SusieAndDima'
 # Always on the landing page, whoever is looking (the non-negotiables). Add more by allocating to a 'Pinned' group.
@@ -192,10 +193,13 @@ def main():
                 except FileNotFoundError: pass
                 open(meta, 'w').write(pid)
             w, h = web_image(src_of(pid), os.path.join(sdir, f), SHOWCASE_PX, 82)
-            items.append({'f': 'img/s/' + f, 'w': w, 'h': h, 'pin': pid in pinned})
+            web_image(src_of(pid), os.path.join(sdir, f'{i:02d}m.jpg'), REEL_PX, 80)
+            items.append({'f': 'img/s/' + f, 'm': f'img/s/{i:02d}m.jpg', 'w': w, 'h': h, 'pin': pid in pinned})
+        keep |= {f[:2] + 'm.jpg' for f in keep}
         for f in os.listdir(sdir):
             if f.endswith('.jpg') and f not in keep:
-                os.remove(os.path.join(sdir, f)); os.remove(os.path.join(sdir, f + '.src'))
+                os.remove(os.path.join(sdir, f))
+                if os.path.isfile(os.path.join(sdir, f + '.src')): os.remove(os.path.join(sdir, f + '.src'))
         save_json(os.path.join(DOCS, 'showcase.json'), items)
         log(f'showcase: {len(items)} photos ({len(pinned)} pinned)')
     else:
@@ -213,6 +217,7 @@ def main():
         w, h = web_image(src, os.path.join(OUT, 'p', oid + '.jpg'), PREVIEW_PX, 84)
         web_image(src, os.path.join(OUT, 't', oid + '.jpg'), THUMB_PX, 80)
         web_image(src, os.path.join(OUT, 'l', oid + '.jpg'), LARGE_PX, 88)
+        web_image(src, os.path.join(OUT, 'm', oid + '.jpg'), REEL_PX, 80)
         if oid not in hashes: hashes[oid] = dhash(os.path.join(OUT, 't', oid + '.jpg'))
         info[pid] = {'id': oid, 'ext': ext, 'w': w, 'h': h, 'bytes': os.path.getsize(src), 'hash': hashes[oid],
                      'lb': os.path.getsize(os.path.join(OUT, 'l', oid + '.jpg')),
@@ -295,7 +300,7 @@ def upload(env, info, guests, gdir):
         jobs.append((f"o/{i['id']}.{i['ext']}", i['src'],
                      {'ContentType': ctype, 'ContentDisposition': f'attachment; filename="{i["name"]}"',
                       'CacheControl': 'public, max-age=31536000'}, False))
-        for kind in ('p', 't'):
+        for kind in ('p', 't', 'm'):
             jobs.append((f"{kind}/{i['id']}.jpg", os.path.join(OUT, kind, i['id'] + '.jpg'),
                          {'ContentType': 'image/jpeg', 'CacheControl': 'public, max-age=31536000'}, False))
         jobs.append((f"l/{i['id']}.jpg", os.path.join(OUT, 'l', i['id'] + '.jpg'),
