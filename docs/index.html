@@ -257,7 +257,6 @@
         <a class="btn primary" id="vdl" download>↓ Save</a>
         <button class="btn" id="vsel">Select</button>
         <button class="btn" id="play" title="Slideshow">▶ Play</button>
-        <a class="lnk" id="vorig" download>original</a>
       </div>
     </div>
     <div id="galgrid"></div>
@@ -271,7 +270,6 @@
     </div>
     <div class="row">
       <span class="hint" id="galhint"></span>
-      <a class="lnk" id="dlorig" download>All originals</a>
       <button class="btn primary shareonly" id="allPhotos" data-label="">Save all to Photos</button>
       <button class="btn primary zipbtn" id="dlall">Download all</button>
     </div>
@@ -584,8 +582,6 @@ function renderGallery(){
   const web = guest.wbytes != null;
   $('#dlall').textContent = `Download all (${mb(web ? guest.wbytes : guest.bytes)})`;
   const ap = $('#allPhotos'); ap.dataset.label = PLATFORM === 'android' ? `Save all ${guest.count} to phone` : `Save all ${guest.count} to Photos`; ap.textContent = ap.dataset.label; ap.disabled = false; batchQ.all = null;
-  const dlo = $('#dlorig'); dlo.style.display = (web && guest.zip) ? '' : 'none';
-  dlo.textContent = `All originals (${mb(guest.bytes)})`; dlo.href = `${FILES}/g/${key}.zip`;
   $('#galhint').innerHTML = document.body.classList.contains('canshare')
     ? `Select photos to save just a few · <button class="lnk" id="dlallz">or zip · ${mb(web ? guest.wbytes : guest.bytes)}</button>`
     : 'Select photos to download just a few';
@@ -601,8 +597,6 @@ function show(i, instant){
   img.dataset.i = cur; img.src = pre.complete ? pre.src : img.src; if (pre.complete) img.classList.remove('swap');
   const big = p.lb != null;                                    // manifests built before the large tier fall back to originals
   $('#vdl').href = url(big ? 'l' : 'o', p); $('#vdl').setAttribute('download', big ? lname(p) : p.name);
-  $('#vorig').href = url('o', p); $('#vorig').setAttribute('download', p.name);
-  $('#vorig').textContent = `original · ${mb(p.bytes)}`; $('#vorig').style.display = big ? '' : 'none';
   $('#vn').textContent = `${cur + 1} / ${guest.count}${big ? '' : ' · ' + mb(p.bytes)}`;
   if (PLATFORM === 'ios' && big) prefetchFile(p);
   document.querySelectorAll('.g').forEach(g => g.classList.toggle('cur', +g.dataset.i === cur));
@@ -617,10 +611,9 @@ function updateSel(){
   const lbytes = [...sel].reduce((s, i) => s + (guest.photos[i].lb || guest.photos[i].bytes), 0);
   $('#dlsel').textContent = `Download ${sel.size} (${mb(lbytes)})`;
   const sp = $('#selPhotos'); if (!batchQ.sel){ sp.dataset.label = PLATFORM === 'android' ? `Save ${sel.size} to phone` : `Save ${sel.size} to Photos`; sp.textContent = sp.dataset.label; }
-  const origLink = guest.photos.some(p => p.lb != null) ? `<button class="lnk" id="dlselo">originals · ${mb(bytes)}</button>` : '';
+  const origLink = '';
   const zipLink = document.body.classList.contains('canshare') ? `<button class="lnk" id="dlselz">zip · ${mb(lbytes)}</button>` : '';
   $('#selinfo').innerHTML = `<b>${sel.size} selected</b>${zipLink}${origLink}`;
-  const so = $('#dlselo'); if (so) so.addEventListener('click', () => zipDownload([...sel].sort((a, b) => a - b), 'originals', 'o'));
   const sz = $('#dlselz'); if (sz) sz.addEventListener('click', () => zipDownload([...sel].sort((a, b) => a - b), 'selection'));
   const on = $('#gal').classList.contains('selecting');
   $('#vsel').textContent = on ? 'Done' : 'Select'; $('#vsel').classList.toggle('on', on);
