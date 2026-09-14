@@ -540,7 +540,7 @@ function reveal(){
     $('#fade').classList.add('on');
     setTimeout(() => { showGallery(); setTimeout(() => $('#fade').classList.remove('on'), 150); if (first) confetti(); }, 420);
   };
-  if (isMobile()){ reel.run = {t0: performance.now(), dur: 1e9, pps: 2}; countdown(secs, () => { reel.run = null; finish(); }); }
+  if (isMobile()){ reel.run = {t0: performance.now(), dur: 1e9, pps: 1}; countdown(secs, () => { reel.run = null; finish(); }); }   // 10 photos in the 10 s
   else countdown(secs, () => gatherCards(900, () => { finish(); setTimeout(() => buildDrift(ambientList()), 800); }));
 }
 function countdown(secs, done){
