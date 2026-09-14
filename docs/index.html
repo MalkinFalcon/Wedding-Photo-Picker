@@ -377,12 +377,12 @@ function ambient(){ const list = ambientList(); buildReel(list); buildDrift(list
 // moment look alike, so they rarely both get picked. Falls back to random if hashes are missing.
 function pickDiverse(photos, n){
   if (photos.length <= n) return shuffle(photos);
-  if (!photos.every(p => p.h)) return shuffle(photos).slice(0, n);
+  if (!photos.every(p => p.ph)) return shuffle(photos).slice(0, n);
   const dist = (a, b) => { let x = BigInt('0x' + a) ^ BigInt('0x' + b), c = 0; while (x){ c += Number(x & 1n); x >>= 1n; } return c; };
   const pool = shuffle(photos), out = [pool.pop()];
   while (out.length < n && pool.length){
     let best = -1, bi = 0;
-    pool.forEach((p, i) => { const d = Math.min(...out.map(o => dist(o.h, p.h))) + Math.random() * .5; if (d > best){ best = d; bi = i; } });
+    pool.forEach((p, i) => { const d = Math.min(...out.map(o => dist(o.ph, p.ph))) + Math.random() * .5; if (d > best){ best = d; bi = i; } });
     out.push(pool.splice(bi, 1)[0]);
   }
   return shuffle(out);

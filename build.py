@@ -259,7 +259,7 @@ def main():
         wbytes = os.path.getsize(wpath)
         save_json(os.path.join(gdir, r['url_key'] + '.json'), {
             'name': r['display_name'], 'count': len(pids), 'bytes': total, 'zip': zippable, 'wbytes': wbytes,
-            'photos': [{**{k: info[p][k] for k in ('id', 'ext', 'w', 'h', 'bytes', 'name', 'lb')}, 'h': info[p]['hash']} for p in pids],
+            'photos': [{**{k: info[p][k] for k in ('id', 'ext', 'w', 'h', 'bytes', 'name', 'lb')}, 'ph': info[p]['hash']} for p in pids],   # ph = perceptual hash (h is height)
         })
         log(f"  {r['display_name']:28} {len(pids):3} photos  {mb(total):>8} orig / {mb(wbytes):>7} web  {'+orig zip' if zippable else ''}   #{r['url_key']}")
     log(f'zips: {mb(zip_total)}')
