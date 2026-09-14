@@ -51,6 +51,8 @@
   #hero.gone ~ #tophint{opacity:0}
   #cta.busy{opacity:.6;pointer-events:none}
   #hint{margin-top:14px;color:var(--dim);font-size:11.5px;letter-spacing:.06em;opacity:.8}
+  #nolink{margin-top:22px;max-width:340px;padding:12px 18px;border-radius:12px;background:#1f1a15;border:1px solid #ffffff22;
+          color:var(--ink);font-size:14px;line-height:1.45;box-shadow:0 6px 24px #000a}
 
   /* ---------- desktop: drifting polaroids ---------- */
   #drift{position:fixed;inset:0;overflow:hidden}
@@ -95,17 +97,6 @@
   #fade{position:fixed;inset:0;z-index:35;background:#000;opacity:0;pointer-events:none;transition:opacity .4s}
   #fade.on{opacity:1}
   #confetti{position:fixed;inset:0;z-index:48;pointer-events:none}
-
-  /* ---------- key prompt ---------- */
-  #keybox{align-items:center;justify-content:center;padding:24px}
-  #keybox form{width:min(440px,100%);text-align:center}
-  #keybox h2{font:italic 400 34px/1.1 "Cormorant Garamond",serif;margin-bottom:10px}
-  #keybox p{color:var(--dim);font-size:14px;margin-bottom:22px;line-height:1.5}
-  #keyin{width:100%;padding:14px 18px;border:1px solid #f3ede455;border-radius:12px;background:#0000;color:var(--ink);
-         font:500 20px/1 Inter,sans-serif;letter-spacing:.06em;text-align:center;text-transform:lowercase;outline:none}
-  #keyin:focus{border-color:var(--accent)}
-  #keyerr{color:#ff9c9c;font-size:13px;min-height:20px;margin-top:10px}
-  #keybox .row{display:flex;gap:10px;justify-content:center;margin-top:14px}
 
   /* ---------- gallery: viewer + grid ---------- */
   #gal{flex-direction:column;overflow:hidden}
@@ -231,22 +222,10 @@
   <h1>Susie <span>&amp;</span> Dima</h1>
   <p id="sub">Thank you for celebrating with us</p>
   <p id="greet"></p>
-  <button id="cta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 15h18M8 4v16M16 4v16"/></svg><span id="ctatxt">Show my photos</span><span class="chev">›</span></button>
+  <p id="nolink" style="display:none"></p>
+  <button id="cta" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 15h18M8 4v16M16 4v16"/></svg><span id="ctatxt">Show my photos</span><span class="chev">›</span></button>
   <p id="hint"></p>
   <button id="gbBtn">Leave us a note ✍</button>
-</div>
-
-<div id="keybox" class="overlay">
-  <form id="keyform">
-    <h2>Your photos</h2>
-    <p>Type the name from your link, e.g. <em>arthur-and-naz</em></p>
-    <input id="keyin" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="40" placeholder="your-name">
-    <div id="keyerr"></div>
-    <div class="row">
-      <button type="button" class="btn" id="keycancel">Back</button>
-      <button type="submit" class="btn primary">Open</button>
-    </div>
-  </form>
 </div>
 
 <div id="gal" class="overlay">
@@ -331,8 +310,9 @@ const AMBIENT_TOTAL = 20, AMBIENT_GUEST_MAX = 10, CLIENT_ZIP_MAX = 400e6;
   } catch (e) {}
   PLATFORM = document.body.classList.contains('android') ? 'android' : document.body.classList.contains('ios') ? 'ios' : 'desktop';
   const fromHash = decodeURIComponent(location.hash.replace(/^#\/?(k=)?/, '')).trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
-  pendingKey = fromHash || store.get('key') || '';
-  if (pendingKey) loadGuest(pendingKey);
+  pendingKey = fromHash;
+  if (pendingKey) loadGuest(pendingKey).then(ok => { if (!ok) noGuest('bad'); });
+  else noGuest('none');
 })();
 
 /* ================= guest ================= */
@@ -342,22 +322,29 @@ async function loadGuest(k){
     const r = await fetch(`${FILES}/g/${encodeURIComponent(k)}.json`, {cache: 'no-cache'});
     if (!r.ok) throw new Error('HTTP ' + r.status);
     guest = await r.json(); key = k; pendingKey = '';
-    store.set('key', k);
     try { history.replaceState(null, '', location.pathname); } catch (e) {}
     $('#hero h1').style.display = 'none';                     // whose wedding it is goes without saying
     $('#greet').innerHTML = `Hi <b>${esc(guest.name)}</b>`;
     $('#greet').classList.add('on'); $('#hero').insertBefore($('#greet'), $('#sub'));
     $('#sub').textContent = 'Thanks for celebrating with us';
-    $('#ctatxt').textContent = `See your photos (${guest.count})`;
+    $('#ctatxt').textContent = `See your photos (${guest.count})`; $('#cta').style.display = ''; $('#nolink').style.display = 'none';
     $('#hint').textContent = 'Drag a photo to throw it';
     renderGallery(); ambient();
     if (GUESTBOOK){ $('#gbBtn').classList.add('on'); $('#gbBtn2').classList.add('on'); }
     return true;
   } catch (e) {
-    if (store.get('key') === k) store.del('key');
     loadGuest.err = String(e.message || e);
     return false;
   } finally { $('#cta').classList.remove('busy'); }
+}
+
+function noGuest(why){
+  $('#cta').style.display = 'none'; $('#hero h1').style.display = ''; $('#greet').classList.remove('on');
+  $('#sub').textContent = 'Thank you for celebrating with us';
+  $('#nolink').textContent = why === 'bad'
+    ? "We couldn't find photos for that link — please check the one we sent you"
+    : 'Open the personal link we sent you to see your photos';
+  $('#nolink').style.display = '';
 }
 
 /* ================= ambient photo mix ================= */
@@ -529,13 +516,8 @@ function tick(now){
 
 /* ================= the reveal ================= */
 async function ctaClick(){
-  if (!guest && pendingKey){                                 // link had a name but the load failed: try again first
-    if (await loadGuest(pendingKey)) return reveal();
-    openKeybox(`Couldn't load "${pendingKey}" (${loadGuest.err || 'network'}) — check your connection and try again`);
-    $('#keyin').value = pendingKey; return;
-  }
-  if (!guest) return openKeybox('');
-  reveal();
+  if (!guest && pendingKey && await loadGuest(pendingKey)) return reveal();
+  if (guest) reveal();
 }
 function reveal(){
   $('#hero').classList.add('gone');
@@ -571,9 +553,6 @@ function confetti(){
     requestAnimationFrame(frame);
   })(t0);
 }
-
-/* ================= key prompt ================= */
-function openKeybox(msg){ $('#keyerr').textContent = msg || ''; $('#keybox').classList.add('open'); setTimeout(() => $('#keyin').focus(), 50); }
 
 /* ================= gallery ================= */
 function renderGallery(){
@@ -769,15 +748,6 @@ async function saveToPhotos(which, indexes, btn){
 function wire(){
   wireReel();
   $('#cta').addEventListener('click', ctaClick);
-  $('#keycancel').addEventListener('click', () => $('#keybox').classList.remove('open'));
-  $('#keyform').addEventListener('submit', async e => {
-    e.preventDefault();
-    const k = $('#keyin').value.trim().toLowerCase().replace(/\s+/g, '-').replace(/&/g, 'and').replace(/[^a-z0-9-]/g, '');
-    if (!k) return;
-    $('#keyerr').textContent = 'Checking…';
-    if (await loadGuest(k)){ $('#keybox').classList.remove('open'); setTimeout(reveal, 300); }
-    else $('#keyerr').textContent = "That name isn't recognised — check the link we sent you";
-  });
   $('#galclose').addEventListener('click', closeGallery);
   $('#vclose').addEventListener('click', closeGallery);
   $('#play').addEventListener('click', () => slideshow(true));
