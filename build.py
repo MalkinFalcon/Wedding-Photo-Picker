@@ -238,7 +238,7 @@ def main():
     # never let a localhost address reach the live site: without R2 the page shows "coming soon"
     files_url = env['PUBLIC_URL'] if env else ('' if args.push else 'http://localhost:8791')
     if args.push and not env: log('!! pushing without R2 configured - guest downloads will show "coming soon"')
-    save_json(os.path.join(DOCS, 'config.json'), {'files': files_url})
+    save_json(os.path.join(DOCS, 'config.json'), {'files': files_url, 'guestbook': (env or {}).get('GUESTBOOK_URL', '').rstrip('/')})
     log(f'config.json -> files served from {files_url}')
 
     if env: upload(env, info, guests, gdir)

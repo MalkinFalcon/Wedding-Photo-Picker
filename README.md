@@ -75,3 +75,16 @@ address bar after loading.
 
 `.r2.env` (credentials), `guests.csv` (URL keys), `photo_ids.json` (the unguessable paths), `_out/`.
 All are in `.gitignore`.
+
+## Guestbook (Cloudflare Worker, once)
+
+The guestbook is `worker/` — a Worker with the photo bucket bound to it. Deploy it once:
+
+```
+cd worker
+npx wrangler login          # opens a browser, approve
+npx wrangler deploy         # prints https://wedding-guestbook.<something>.workers.dev
+```
+
+Put that URL in `.r2.env` as `GUESTBOOK_URL=https://wedding-guestbook....workers.dev`, then `python build.py --push`.
+Notes are stored as `guestbook/<ts>-<key>.json` in the bucket; `GET <url>/notes` lists them.

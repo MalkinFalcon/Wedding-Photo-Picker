@@ -141,6 +141,27 @@
     #galfoot .hint{display:none}
   }
 
+  /* ---------- booth strip + guestbook ---------- */
+  #stripbox,#gbbox{align-items:center;justify-content:center;padding:20px;z-index:52}
+  #stripbox .box{display:flex;flex-direction:column;align-items:center;gap:14px;max-height:100%}
+  #stripimg{max-height:72vh;max-width:min(92vw,400px);box-shadow:0 24px 70px #000;background:#fbf9f4}
+  .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  #gbbox .box{width:min(560px,100%);max-height:100%;display:flex;flex-direction:column;gap:12px}
+  #gbbox h2{font:italic 400 32px/1.1 "Cormorant Garamond",serif}
+  #gbbox .sub{color:var(--dim);font-size:13px;margin-top:-6px}
+  #gbmsg{width:100%;min-height:100px;padding:12px 14px;border:1px solid #f3ede455;border-radius:12px;background:#0000;
+         color:var(--ink);font:inherit;resize:vertical;outline:none}
+  #gbmsg:focus{border-color:var(--accent)}
+  #gbwall{overflow-y:auto;min-height:0;display:flex;flex-direction:column;gap:10px;padding-right:4px}
+  .note{background:#ffffff0a;border:1px solid #ffffff12;border-radius:10px;padding:10px 14px;font-size:14px}
+  .note b{color:var(--accent);font-weight:500} .note small{color:var(--dim);margin-left:8px;font-size:11px}
+  .note p{white-space:pre-wrap;margin-top:3px}
+  #gbempty{color:var(--dim);font-size:13px;text-align:center;padding:14px}
+  #gbBtn{margin-top:12px;background:none;border:0;color:var(--dim);font:inherit;font-size:12.5px;letter-spacing:.06em;
+         cursor:pointer;text-decoration:underline;text-underline-offset:4px;display:none}
+  #gbBtn.on{display:inline} #gbBtn:hover{color:var(--ink)}
+  #gbBtn2{display:none} #gbBtn2.on{display:inline-block}
+
   #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#f3ede4;color:#15120e;
          padding:10px 18px;border-radius:999px;font-size:13px;opacity:0;transition:opacity .25s;z-index:60;
          pointer-events:none;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis}
@@ -160,6 +181,7 @@
   <p id="greet"></p>
   <button id="cta">Show my photos</button>
   <p id="hint"></p>
+  <button id="gbBtn">Leave us a note ✍</button>
 </div>
 
 <div id="keybox" class="overlay">
@@ -179,6 +201,7 @@
   <div id="galbar">
     <h2 id="galtitle"></h2>
     <span class="n" id="galn"></span>
+    <button class="btn" id="gbBtn2">Guestbook</button>
     <button class="btn" id="selmode">Select</button>
     <button class="btn" id="galclose">Close</button>
   </div>
@@ -197,10 +220,30 @@
   </div>
   <div id="galfoot">
     <span class="hint" id="galhint"></span>
+    <button class="btn" id="stripBtn" disabled>Booth strip</button>
     <button class="btn" id="dlsel" disabled>Download selected</button>
     <button class="btn primary" id="dlall">Download all</button>
   </div>
 </div>
+<div id="stripbox" class="overlay"><div class="box">
+  <img id="stripimg" alt="Your photo-booth strip">
+  <div class="row">
+    <a class="btn primary" id="stripSave" download="SusieAndDima_booth_strip.jpg">↓ Save</a>
+    <button class="btn" id="stripShare">Share</button>
+    <button class="btn" id="stripClose">Close</button>
+  </div>
+</div></div>
+
+<div id="gbbox" class="overlay"><div class="box">
+  <h2>Guestbook</h2>
+  <div class="sub">A line for Susie &amp; Dima — everyone with a link can read these.</div>
+  <textarea id="gbmsg" maxlength="600" placeholder="Write something…"></textarea>
+  <div class="row" style="justify-content:flex-end">
+    <button class="btn" id="gbClose">Close</button>
+    <button class="btn primary" id="gbSend">Send</button>
+  </div>
+  <div id="gbwall"><div id="gbempty">Loading notes…</div></div>
+</div></div>
 <div id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
@@ -215,7 +258,7 @@ const store = { get: k => { try { return localStorage.getItem(k); } catch (e) { 
                 del: k => { try { localStorage.removeItem(k); } catch (e) {} } };
 
 const FILES_FALLBACK = 'https://pub-24efede884af4056b17024d7b118e97a.r2.dev';
-let FILES = '', showcase = [], guest = null, key = '', pendingKey = '', cur = 0, revealed = false;
+let FILES = '', GUESTBOOK = '', showcase = [], guest = null, key = '', pendingKey = '', cur = 0, revealed = false;
 const sel = new Set();
 const AMBIENT_TOTAL = 20, AMBIENT_GUEST_MAX = 10, CLIENT_ZIP_MAX = 400e6;
 
@@ -225,6 +268,7 @@ const AMBIENT_TOTAL = 20, AMBIENT_GUEST_MAX = 10, CLIENT_ZIP_MAX = 400e6;
   try { cfg = await fetch('config.json', fresh).then(r => r.json()); } catch (e) {}
   try { showcase = await fetch('showcase.json', fresh).then(r => r.json()); } catch (e) { showcase = []; }
   FILES = (new URLSearchParams(location.search).get('files') || cfg.files || FILES_FALLBACK).replace(/\/$/, '');
+  GUESTBOOK = (new URLSearchParams(location.search).get('guestbook') || cfg.guestbook || '').replace(/\/$/, '');
   ambient(); wire(); requestAnimationFrame(tick);
   const fromHash = decodeURIComponent(location.hash.replace(/^#\/?(k=)?/, '')).trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
   pendingKey = fromHash || store.get('key') || '';
@@ -245,6 +289,7 @@ async function loadGuest(k){
     $('#cta').textContent = 'See my photos';
     $('#hint').textContent = isMobile() ? 'Drag the film to scroll it' : 'Drag a photo to throw it';
     renderGallery(); ambient();
+    if (GUESTBOOK){ $('#gbBtn').classList.add('on'); $('#gbBtn2').classList.add('on'); }
     return true;
   } catch (e) {
     if (store.get('key') === k) store.del('key');
@@ -476,6 +521,8 @@ function updateSel(){
   const bytes = [...sel].reduce((s, i) => s + guest.photos[i].bytes, 0);
   $('#dlsel').disabled = !sel.size;
   $('#dlsel').textContent = sel.size ? `Download selected (${sel.size} · ${mb(bytes)})` : 'Download selected';
+  const sb = $('#stripBtn'); sb.disabled = !(sel.size >= 2 && sel.size <= 4);
+  sb.textContent = sel.size ? `Booth strip (${Math.min(sel.size, 4)}/4)` : 'Booth strip';
   $('#vsel').textContent = sel.has(cur) ? '✓ Selected' : 'Select';
   $('#vsel').classList.toggle('on', sel.has(cur));
 }
@@ -500,6 +547,68 @@ async function zipDownload(indexes, label){
   } catch (e) {
     toast('Download failed — please try again'); console.error(e);
   } finally { btn.disabled = false; btn.textContent = was; }
+}
+
+/* ================= photo-booth strip ================= */
+async function makeStrip(indexes){
+  const items = indexes.slice(0, 4).map(i => guest.photos[i]);
+  const btn = $('#stripBtn'), was = btn.textContent; btn.disabled = true; btn.textContent = 'Developing…';
+  try {
+    await document.fonts.load('italic 400 48px "Cormorant Garamond"').catch(() => {});
+    const imgs = await Promise.all(items.map(p => new Promise((res, rej) => {
+      const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => res(im); im.onerror = rej; im.src = url('p', p);
+    })));
+    const W = 720, F = 620, M = 50, G = 26, FOOT = 130;
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = M + imgs.length * (F + G) - G + FOOT;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#fbf9f4'; ctx.fillRect(0, 0, cv.width, cv.height);
+    imgs.forEach((im, i) => {
+      const y = M + i * (F + G), s = Math.max(F / im.width, F / im.height), w = im.width * s, h = im.height * s;
+      ctx.save(); ctx.beginPath(); ctx.rect(M, y, F, F); ctx.clip();
+      ctx.drawImage(im, M + (F - w) / 2, y + (F - h) / 2, w, h); ctx.restore();
+      ctx.strokeStyle = '#00000014'; ctx.lineWidth = 1; ctx.strokeRect(M + .5, y + .5, F - 1, F - 1);
+    });
+    ctx.fillStyle = '#15120e'; ctx.textAlign = 'center';
+    ctx.font = 'italic 400 44px "Cormorant Garamond", serif'; ctx.fillText('Susie & Dima', W / 2, cv.height - FOOT + 62);
+    ctx.fillStyle = '#8a8178'; ctx.font = '500 15px Inter, sans-serif'; ctx.fillText('M E L B O U R N E   ·   2 0 2 6', W / 2, cv.height - FOOT + 94);
+    const blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', .92));
+    makeStrip.file = new File([blob], 'SusieAndDima_booth_strip.jpg', {type: 'image/jpeg'});
+    const u = URL.createObjectURL(blob);
+    $('#stripimg').src = u; $('#stripSave').href = u;
+    $('#stripShare').style.display = (navigator.canShare && navigator.canShare({files: [makeStrip.file]})) ? '' : 'none';
+    $('#stripbox').classList.add('open');
+  } catch (e) { toast('Could not build the strip — try again'); console.error(e); }
+  finally { btn.disabled = false; btn.textContent = was; }
+}
+
+/* ================= guestbook ================= */
+async function openGuestbook(){
+  if (!GUESTBOOK) return;
+  $('#gbbox').classList.add('open'); $('#gbmsg').focus();
+  const wall = $('#gbwall'); wall.innerHTML = '<div id="gbempty">Loading notes…</div>';
+  try {
+    const notes = await fetch(`${GUESTBOOK}/notes`, {cache: 'no-store'}).then(r => r.json());
+    renderNotes(notes);
+  } catch (e) { wall.innerHTML = '<div id="gbempty">Could not load the notes right now</div>'; }
+}
+function renderNotes(notes){
+  const wall = $('#gbwall');
+  if (!notes.length){ wall.innerHTML = '<div id="gbempty">No notes yet — be the first</div>'; return; }
+  wall.innerHTML = notes.map(n => `<div class="note"><b>${esc(n.name)}</b><small>${new Date(n.ts).toLocaleDateString(undefined, {day: 'numeric', month: 'short'})}</small><p>${esc(n.message)}</p></div>`).join('');
+}
+async function sendNote(){
+  const message = $('#gbmsg').value.trim(); if (!message) return;
+  const btn = $('#gbSend'); btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    const r = await fetch(`${GUESTBOOK}/notes`, {method: 'POST', headers: {'Content-Type': 'application/json'},
+                          body: JSON.stringify({key, name: guest.name, message})});
+    if (!r.ok) throw new Error(r.status);
+    $('#gbmsg').value = '';
+    const wall = $('#gbwall'); if ($('#gbempty')) wall.innerHTML = '';
+    wall.insertAdjacentHTML('afterbegin', `<div class="note"><b>${esc(guest.name)}</b><small>just now</small><p>${esc(message)}</p></div>`);
+    toast('Thank you ❤'); confetti();
+  } catch (e) { toast('Could not send — please try again'); }
+  finally { btn.disabled = false; btn.textContent = 'Send'; }
 }
 
 /* ================= wiring ================= */
@@ -531,6 +640,14 @@ function wire(){
   $('#next').addEventListener('click', () => show(cur + 1));
   $('#vsel').addEventListener('click', () => { sel.has(cur) ? sel.delete(cur) : sel.add(cur); updateSel(); });
   $('#dlsel').addEventListener('click', () => zipDownload([...sel].sort((a, b) => a - b), 'selection'));
+  $('#stripBtn').addEventListener('click', () => makeStrip([...sel].sort((a, b) => a - b)));
+  $('#stripClose').addEventListener('click', () => $('#stripbox').classList.remove('open'));
+  $('#stripShare').addEventListener('click', () => navigator.share({files: [makeStrip.file], title: 'Susie & Dima'}).catch(() => {}));
+  $('#gbBtn').addEventListener('click', openGuestbook);
+  $('#gbBtn2').addEventListener('click', openGuestbook);
+  $('#gbClose').addEventListener('click', () => $('#gbbox').classList.remove('open'));
+  $('#gbSend').addEventListener('click', sendNote);
+  $('#gbmsg').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) sendNote(); e.stopPropagation(); });
   $('#dlall').addEventListener('click', () => {
     if (guest.zip){ const a = document.createElement('a'); a.href = `${FILES}/g/${key}.zip`; a.download = ''; a.click(); toast('Your zip is on its way'); }
     else zipDownload(guest.photos.map((_, i) => i), 'all');
@@ -539,7 +656,7 @@ function wire(){
     if (!$('#gal').classList.contains('open')) return;
     if (e.key === 'ArrowRight') show(cur + 1);
     if (e.key === 'ArrowLeft') show(cur - 1);
-    if (e.key === 'Escape') closeGallery();
+    if (e.key === 'Escape'){ for (const id of ['#stripbox', '#gbbox']) if ($(id).classList.contains('open')) return $(id).classList.remove('open'); closeGallery(); }
   });
   let sx = 0, sy = 0;
   $('#viewer').addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, {passive: true});

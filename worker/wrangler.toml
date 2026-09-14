@@ -1,0 +1,7 @@
+name = "wedding-guestbook"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "wedding-photos"
