@@ -39,6 +39,8 @@ PREVIEW_PX   = 1600
 THUMB_PX     = 480
 ALPHABET     = 'abcdefghjkmnpqrstuvwxyz23456789'   # no i l o 0 1 - these get read aloud / typed
 DL_PREFIX    = 'SusieAndDima'
+# Always on the landing page, whoever is looking (the non-negotiables). Add more by allocating to a 'Pinned' group.
+PINNED       = ['0799.jpg', '0877.jpg', '0884.jpg', '2011.jpg', '2080.jpg', '2085.jpg', '2332.jpg', '2417.jpg', '2678.jpg', '3393.jpg']
 ORIGINS      = ['https://susieanddima.com', 'https://www.susieanddima.com',
                 'http://localhost:8790', 'http://127.0.0.1:8790']
 
@@ -114,14 +116,16 @@ def main():
     POOLS    = {'China_All': 'C', 'Melbourne_All': 'M'}   # merged into every guest tagged with that wedding
     attend   = state.get('attend', {})
     raw      = {k: v for k, v in state.get('assign', {}).items() if k in manifest and v}
-    show     = sorted({k for k in state.get('show', {}) if k in manifest} | {k for k, v in raw.items() if SHOW in v})
+    pinned   = {k for k in PINNED if k in manifest} | {k for k, v in raw.items() if 'Pinned' in v}
+    show     = sorted({k for k in state.get('show', {}) if k in manifest} | {k for k, v in raw.items() if SHOW in v} | pinned)
+    web_names = state.get('names', {})          # display names edited in the picker's Names panel
     src_of   = lambda pid: os.path.join(WEDDING, manifest[pid].replace('/', os.sep))
 
     # --- guests: fill blank keys, warn about mismatches -------------------------------
     guests = [r for r in read_guests() if r['app_name'] not in POOLS]
     wanted = {r['app_name'] for r in guests}
     # only photos allocated to a real guest need web assets / uploading
-    assign = {k: [n for n in v if n != SHOW] for k, v in raw.items()}
+    assign = {k: [n for n in v if n not in (SHOW, 'Pinned')] for k, v in raw.items()}
     for k, v in assign.items():                      # China_All -> everyone tagged C, etc.
         extra = [g for g in wanted if any(pool in v and code in attend.get(g, '') for pool, code in POOLS.items())]
         v += [g for g in extra if g not in v]
@@ -131,9 +135,10 @@ def main():
     counts = {}
     for pid, names in assign.items():
         for n in names: counts[n] = counts.get(n, 0) + 1
-    known = set(state.get('people', [])) - {SHOW} - set(POOLS)
+    known = set(state.get('people', [])) - {SHOW, 'Pinned'} - set(POOLS)
     used = {r['url_key'] for r in guests if r['url_key']}
     for r in guests:
+        if web_names.get(r['app_name'], '').strip(): r['display_name'] = web_names[r['app_name']].strip()
         if not r['display_name']: r['display_name'] = r['app_name']
         if not r['url_key']:
             while (k := rand(8)) in used: pass
@@ -166,12 +171,12 @@ def main():
                 except FileNotFoundError: pass
                 open(meta, 'w').write(pid)
             w, h = web_image(src_of(pid), os.path.join(sdir, f), SHOWCASE_PX, 82)
-            items.append({'f': 'img/s/' + f, 'w': w, 'h': h})
+            items.append({'f': 'img/s/' + f, 'w': w, 'h': h, 'pin': pid in pinned})
         for f in os.listdir(sdir):
             if f.endswith('.jpg') and f not in keep:
                 os.remove(os.path.join(sdir, f)); os.remove(os.path.join(sdir, f + '.src'))
         save_json(os.path.join(DOCS, 'showcase.json'), items)
-        log(f'showcase: {len(items)} photos')
+        log(f'showcase: {len(items)} photos ({len(pinned)} pinned)')
     else:
         proto = load_json(os.path.join(DOCS, 'img', 'list.json'), [])
         save_json(os.path.join(DOCS, 'showcase.json'), [{'f': 'img/' + p['f'], 'w': p['w'], 'h': p['h']} for p in proto])
