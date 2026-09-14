@@ -685,9 +685,10 @@ function slideshow(start){
   show_.list = show_.fav ? [...sel].sort((a, b) => a - b) : guest.photos.map((_, i) => i);
   $('#sfav').style.display = sel.size > 1 ? '' : 'none'; $('#sfav').classList.toggle('on', show_.fav);
   const kind = isMobile() ? 'm' : 'p';
+  el.classList.add('open');                                        // open first so frames have layout
   sreel.build(show_.list.map(i => ({f: url(kind, guest.photos[i]), w: guest.photos[i].w, h: guest.photos[i].h})));
-  el.classList.add('open'); show_.on = true;
-  requestAnimationFrame(() => { const at = show_.list.indexOf(cur); sreel.jumpTo(at < 0 ? 0 : at); sreel.tick(0); });
+  const at = show_.list.indexOf(cur); sreel.jumpTo(at < 0 ? 0 : at); sreel.tick(0);
+  show_.on = true;
 }
 function slideExit(){ const i = show_.list[sreel.nearest()]; slideshow(false); if (i != null) show(i, true); }
 
