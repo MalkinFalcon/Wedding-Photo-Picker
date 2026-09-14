@@ -111,20 +111,27 @@ def main():
     state    = load_json(os.path.join(APP, 'state.json'), {})
     manifest = {r['id']: r['src'] for r in load_json(os.path.join(APP, 'manifest.json'), [])}
     SHOW     = 'Showcase'                      # the website group in the picker; W toggles it
+    POOLS    = {'China_All': 'C', 'Melbourne_All': 'M'}   # merged into every guest tagged with that wedding
+    attend   = state.get('attend', {})
     raw      = {k: v for k, v in state.get('assign', {}).items() if k in manifest and v}
     show     = sorted({k for k in state.get('show', {}) if k in manifest} | {k for k, v in raw.items() if SHOW in v})
     src_of   = lambda pid: os.path.join(WEDDING, manifest[pid].replace('/', os.sep))
 
     # --- guests: fill blank keys, warn about mismatches -------------------------------
-    guests = read_guests()
+    guests = [r for r in read_guests() if r['app_name'] not in POOLS]
     wanted = {r['app_name'] for r in guests}
     # only photos allocated to a real guest need web assets / uploading
     assign = {k: [n for n in v if n != SHOW] for k, v in raw.items()}
+    for k, v in assign.items():                      # China_All -> everyone tagged C, etc.
+        extra = [g for g in wanted if any(pool in v and code in attend.get(g, '') for pool, code in POOLS.items())]
+        v += [g for g in extra if g not in v]
+    for r in guests:
+        if not attend.get(r['app_name']): log(f"!! '{r['app_name']}' has no C/M tag - gets no China_All / Melbourne_All photos")
     assign = {k: v for k, v in assign.items() if any(n in wanted for n in v)}
     counts = {}
     for pid, names in assign.items():
         for n in names: counts[n] = counts.get(n, 0) + 1
-    known = set(state.get('people', [])) - {SHOW}
+    known = set(state.get('people', [])) - {SHOW} - set(POOLS)
     used = {r['url_key'] for r in guests if r['url_key']}
     for r in guests:
         if not r['display_name']: r['display_name'] = r['app_name']
