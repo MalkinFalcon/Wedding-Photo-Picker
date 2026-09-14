@@ -40,6 +40,7 @@ ENV     = os.path.join(SITE, '.r2.env')
 ZIP_MAX_MB   = 250                    # bigger bundles get per-photo / selected downloads only
 SHOWCASE_PX  = 1600
 PREVIEW_PX   = 1600
+LARGE_PX     = 2400                   # the default download: phone/print-friendly, ~1-1.5 MB
 THUMB_PX     = 480
 ALPHABET     = 'abcdefghjkmnpqrstuvwxyz23456789'   # no i l o 0 1 - these get read aloud / typed
 DL_PREFIX    = 'SusieAndDima'
@@ -211,8 +212,10 @@ def main():
         ext = 'jpg' if ext == 'jpeg' else ext
         w, h = web_image(src, os.path.join(OUT, 'p', oid + '.jpg'), PREVIEW_PX, 84)
         web_image(src, os.path.join(OUT, 't', oid + '.jpg'), THUMB_PX, 80)
+        web_image(src, os.path.join(OUT, 'l', oid + '.jpg'), LARGE_PX, 86)
         if oid not in hashes: hashes[oid] = dhash(os.path.join(OUT, 't', oid + '.jpg'))
         info[pid] = {'id': oid, 'ext': ext, 'w': w, 'h': h, 'bytes': os.path.getsize(src), 'hash': hashes[oid],
+                     'lb': os.path.getsize(os.path.join(OUT, 'l', oid + '.jpg')),
                      'name': f'{DL_PREFIX}_{pid[:-4]}.{ext}', 'src': src}
         if n % 50 == 0: log(f'  web assets {n}/{len(assign)}')
     save_json(os.path.join(OUT, 'hashes.json'), hashes)
@@ -239,11 +242,21 @@ def main():
             zip_total += os.path.getsize(zpath)
         elif os.path.isfile(zpath):
             os.remove(zpath)
+        wpath = os.path.join(gdir, r['url_key'] + '-web.zip')          # large tier, always available
+        wwant = [info[p]['name'].rsplit('.', 1)[0] + '.jpg' for p in pids]
+        wstale = True
+        if os.path.isfile(wpath):
+            with zipfile.ZipFile(wpath) as z: wstale = sorted(z.namelist()) != sorted(wwant)
+        if wstale:
+            with zipfile.ZipFile(wpath + '.tmp', 'w', zipfile.ZIP_STORED) as z:
+                for p, nm in zip(pids, wwant): z.write(os.path.join(OUT, 'l', info[p]['id'] + '.jpg'), nm)
+            os.replace(wpath + '.tmp', wpath)
+        wbytes = os.path.getsize(wpath)
         save_json(os.path.join(gdir, r['url_key'] + '.json'), {
-            'name': r['display_name'], 'count': len(pids), 'bytes': total, 'zip': zippable,
-            'photos': [{**{k: info[p][k] for k in ('id', 'ext', 'w', 'h', 'bytes', 'name')}, 'h': info[p]['hash']} for p in pids],
+            'name': r['display_name'], 'count': len(pids), 'bytes': total, 'zip': zippable, 'wbytes': wbytes,
+            'photos': [{**{k: info[p][k] for k in ('id', 'ext', 'w', 'h', 'bytes', 'name', 'lb')}, 'h': info[p]['hash']} for p in pids],
         })
-        log(f"  {r['display_name']:28} {len(pids):3} photos  {mb(total):>8}  {'zip' if zippable else 'no zip (too big)'}   #{r['url_key']}")
+        log(f"  {r['display_name']:28} {len(pids):3} photos  {mb(total):>8} orig / {mb(wbytes):>7} web  {'+orig zip' if zippable else ''}   #{r['url_key']}")
     log(f'zips: {mb(zip_total)}')
 
     # --- site config -----------------------------------------------------------------------------
@@ -285,11 +298,21 @@ def upload(env, info, guests, gdir):
         for kind in ('p', 't'):
             jobs.append((f"{kind}/{i['id']}.jpg", os.path.join(OUT, kind, i['id'] + '.jpg'),
                          {'ContentType': 'image/jpeg', 'CacheControl': 'public, max-age=31536000'}, False))
+        jobs.append((f"l/{i['id']}.jpg", os.path.join(OUT, 'l', i['id'] + '.jpg'),
+                     {'ContentType': 'image/jpeg', 'CacheControl': 'public, max-age=31536000',
+                      'ContentDisposition': f'attachment; filename="{i["name"].rsplit(".", 1)[0]}.jpg"'}, False))
     for r in guests:
         j = os.path.join(gdir, r['url_key'] + '.json')
         if not os.path.isfile(j): continue
         jobs.append((f"g/{r['url_key']}.json", j,
                      {'ContentType': 'application/json', 'CacheControl': 'no-cache'}, True))
+        wz = os.path.join(gdir, r['url_key'] + '-web.zip')
+        if os.path.isfile(wz):
+            safe = ''.join(c for c in r['display_name'] if c.isalnum() or c in ' -_').strip().replace(' ', '_')
+            jobs.append((f"g/{r['url_key']}-web.zip", wz,
+                         {'ContentType': 'application/zip',
+                          'ContentDisposition': f'attachment; filename="{DL_PREFIX}_{safe}.zip"',
+                          'CacheControl': 'no-cache'}, False))
         z = os.path.join(gdir, r['url_key'] + '.zip')
         if os.path.isfile(z):
             safe = ''.join(c for c in r['display_name'] if c.isalnum() or c in ' -_').strip().replace(' ', '_')

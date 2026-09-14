@@ -67,8 +67,9 @@ Open http://localhost:8790/#<url_key>.
 
 `#<key>` → fetch `FILES/g/<key>.json` (name + photo list) → thumbs from `t/`, lightbox from `p/`,
 originals from `o/` (served with `Content-Disposition: attachment`, so a tap downloads).
-"Download all" uses the pre-built `g/<key>.zip` when the set is under 250 MB; otherwise the page
-zips a selection in the browser (fflate). The key is remembered in the browser and removed from the
+Downloads default to the 2400 px large tier (per-photo *Save*, *Download all* = `g/<key>-web.zip`, selections zipped in the
+browser with fflate). Originals stay one tap away: *original* under each photo, *All originals* (`g/<key>.zip`, sets under 250 MB),
+and *originals* on a selection. *▶ Play* runs a Ken-Burns slideshow of the guest's photos. The key is remembered in the browser and removed from the
 address bar after loading.
 
 ## Files that must never be committed

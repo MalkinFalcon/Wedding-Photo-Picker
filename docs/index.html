@@ -185,6 +185,24 @@
   #gbBtn.on{display:inline} #gbBtn:hover{color:var(--ink)}
   #gbBtn2{display:none} #gbBtn2.on{display:inline-block}
 
+  /* ---------- slideshow ---------- */
+  #show{position:fixed;inset:0;z-index:55;background:#000;display:none;overflow:hidden;cursor:pointer}
+  #show.open{display:block}
+  #show img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1.2s ease,transform 7s linear;
+            will-change:transform,opacity}
+  #show img.on{opacity:1}
+  #show .grain{position:absolute;inset:-50%;width:200%;height:200%;pointer-events:none;opacity:.14;mix-blend-mode:screen;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    animation:grain .35s steps(3) infinite}
+  @keyframes grain{0%{transform:translate(0,0)}33%{transform:translate(-3%,2%)}66%{transform:translate(2%,-3%)}100%{transform:translate(-1%,-1%)}}
+  #show .vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,#000c 100%)}
+  #show .cap{position:absolute;left:0;right:0;bottom:max(22px,env(safe-area-inset-bottom));text-align:center;color:#f3ede4aa;
+             font-size:12px;letter-spacing:.14em;text-transform:uppercase;text-shadow:0 1px 8px #000}
+  #show .cap b{display:block;font:italic 400 26px/1.2 "Cormorant Garamond",serif;text-transform:none;letter-spacing:0;color:#f3ede4;margin-bottom:6px}
+  .lnk{background:none;border:0;color:var(--dim);font:inherit;font-size:11.5px;letter-spacing:.04em;cursor:pointer;
+       text-decoration:underline;text-underline-offset:3px;padding:0}
+  .lnk:hover{color:var(--ink)}
+
   #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#f3ede4;color:#15120e;
          padding:10px 18px;border-radius:999px;font-size:13px;opacity:0;transition:opacity .25s;z-index:60;
          pointer-events:none;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis}
@@ -237,8 +255,10 @@
       <div id="vpic"><img id="vimg" alt=""></div>
       <div id="vbar">
         <span class="n" id="vn"></span>
-        <a class="btn primary" id="vdl" download>↓ Original</a>
+        <a class="btn primary" id="vdl" download>↓ Save</a>
         <button class="btn" id="vsel">✓ Select</button>
+        <button class="btn" id="play" title="Slideshow">▶ Play</button>
+        <a class="lnk" id="vorig" download>original</a>
       </div>
     </div>
     <div id="galgrid"></div>
@@ -252,10 +272,12 @@
     </div>
     <div class="row">
       <span class="hint" id="galhint"></span>
+      <a class="lnk" id="dlorig" download>All originals</a>
       <button class="btn primary" id="dlall">Download all</button>
     </div>
   </div>
 </div>
+<div id="show"><img id="s0" alt=""><img id="s1" alt=""><div class="grain"></div><div class="vig"></div><div class="cap" id="scap"></div></div>
 <div id="stripbox" class="overlay"><div class="box">
   <img id="stripimg" alt="Your photo-booth strip">
   <div class="row">
@@ -332,7 +354,8 @@ async function loadGuest(k){
 }
 
 /* ================= ambient photo mix ================= */
-const url = (kind, p) => `${FILES}/${kind}/${p.id}.${kind === 'o' ? p.ext : 'jpg'}`;
+const url = (kind, p) => `${FILES}/${kind}/${p.id}.${kind === 'o' ? p.ext : 'jpg'}`;   // t thumb · p preview · l large (default download) · o original
+const lname = p => p.name.replace(/\.[^.]+$/, '.jpg');                                      // large tier is always jpg
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
 function ambientList(){
   const pinned = showcase.filter(p => p.pin), rest = shuffle(showcase.filter(p => !p.pin));
@@ -551,9 +574,11 @@ function renderGallery(){
   $('#galn').textContent = `${guest.count} photos · ${mb(guest.bytes)}`;
   $('#galgrid').innerHTML = guest.photos.map((p, i) =>
     `<div class="g" data-i="${i}"><img src="${url('t', p)}" alt="" loading="lazy"><span class="tick">✓</span></div>`).join('');
-  $('#dlall').textContent = guest.zip ? `Download all (${mb(guest.bytes)})` : 'Download all';
-  $('#galhint').textContent = guest.zip ? 'Tap ✓ Select under a photo to download just a few, or make a booth strip' :
-    `Your set is ${mb(guest.bytes)} — too big for one file. Use ✓ Select to grab a batch at a time.`;
+  const web = guest.wbytes != null;
+  $('#dlall').textContent = `Download all (${mb(web ? guest.wbytes : guest.bytes)})`;
+  const dlo = $('#dlorig'); dlo.style.display = (web && guest.zip) ? '' : 'none';
+  dlo.textContent = `All originals (${mb(guest.bytes)})`; dlo.href = `${FILES}/g/${key}.zip`;
+  $('#galhint').textContent = 'Tap ✓ Select under a photo to download just a few, or make a booth strip';
   sel.clear(); show(0, true); updateSel();
 }
 function show(i, instant){
@@ -563,8 +588,11 @@ function show(i, instant){
   const pre = new Image(); pre.src = url('p', p);
   pre.onload = () => { if (img.dataset.i == cur){ img.src = pre.src; img.classList.remove('swap'); } };
   img.dataset.i = cur; img.src = pre.complete ? pre.src : img.src; if (pre.complete) img.classList.remove('swap');
-  $('#vdl').href = url('o', p); $('#vdl').setAttribute('download', p.name);
-  $('#vn').textContent = `${cur + 1} / ${guest.count} · ${mb(p.bytes)}`;
+  const big = p.lb != null;                                    // manifests built before the large tier fall back to originals
+  $('#vdl').href = url(big ? 'l' : 'o', p); $('#vdl').setAttribute('download', big ? lname(p) : p.name);
+  $('#vorig').href = url('o', p); $('#vorig').setAttribute('download', p.name);
+  $('#vorig').textContent = `original · ${mb(p.bytes)}`; $('#vorig').style.display = big ? '' : 'none';
+  $('#vn').textContent = `${cur + 1} / ${guest.count}${big ? '' : ' · ' + mb(p.bytes)}`;
   document.querySelectorAll('.g').forEach(g => g.classList.toggle('cur', +g.dataset.i === cur));
   const g = document.querySelectorAll('.g')[cur]; if (g) g.scrollIntoView({block: 'nearest', behavior: 'smooth'});
   for (const j of [cur + 1, cur - 1]) if (guest.photos[(j + guest.count) % guest.count]) new Image().src = url('p', guest.photos[(j + guest.count) % guest.count]);
@@ -574,26 +602,30 @@ function updateSel(){
   document.querySelectorAll('.g').forEach(g => g.classList.toggle('sel', sel.has(+g.dataset.i)));
   const bytes = [...sel].reduce((s, i) => s + guest.photos[i].bytes, 0);
   $('#selrow').classList.toggle('on', sel.size > 0);
-  $('#dlsel').textContent = `Download ${sel.size} (${mb(bytes)})`;
+  const lbytes = [...sel].reduce((s, i) => s + (guest.photos[i].lb || guest.photos[i].bytes), 0);
+  $('#dlsel').textContent = `Download ${sel.size} (${mb(lbytes)})`;
   const sb = $('#stripBtn'), ok = sel.size >= 2 && sel.size <= 4; sb.disabled = !ok;
   sb.textContent = ok ? `Booth strip (${sel.size})` : 'Booth strip';
-  $('#selinfo').innerHTML = `<b>${sel.size} selected</b><small>${ok ? 'Download them, or turn them into a photo-booth strip' : sel.size < 2 ? 'Pick 2–4 for a booth strip' : 'Booth strips take up to 4 — download works for any number'}</small>`;
+  const origLink = guest.photos.some(p => p.lb != null) ? ` · <button class="lnk" id="dlselo">originals (${mb(bytes)})</button>` : '';
+  $('#selinfo').innerHTML = `<b>${sel.size} selected</b><small>${ok ? 'Download them, or turn them into a photo-booth strip' : sel.size < 2 ? 'Pick 2–4 for a booth strip' : 'Booth strips take up to 4 — download works for any number'}${origLink}</small>`;
+  const so = $('#dlselo'); if (so) so.addEventListener('click', () => zipDownload([...sel].sort((a, b) => a - b), 'originals', 'o'));
   $('#vsel').textContent = sel.has(cur) ? '✓ Selected' : '✓ Select';
   $('#vsel').classList.toggle('on', sel.has(cur));
 }
 
 /* ================= downloads ================= */
-async function zipDownload(indexes, label){
+async function zipDownload(indexes, label, kind){
   const items = indexes.map(i => guest.photos[i]);
-  const total = items.reduce((s, p) => s + p.bytes, 0);
+  kind = kind || (items.every(p => p.lb != null) ? 'l' : 'o');
+  const total = items.reduce((s, p) => s + (kind === 'l' ? p.lb : p.bytes), 0);
   if (total > CLIENT_ZIP_MAX) return toast(`That's ${mb(total)} — please do it in batches under ${mb(CLIENT_ZIP_MAX)}`);
   const btn = $('#dlsel'), was = btn.textContent; btn.disabled = true;
   try {
     const files = {}; let done = 0;
     for (const p of items){
-      const r = await fetch(url('o', p)); if (!r.ok) throw new Error('fetch ' + r.status);
-      files[p.name] = [new Uint8Array(await r.arrayBuffer()), {level: 0}];
-      done += p.bytes; btn.textContent = `Preparing… ${Math.round(done / total * 100)}%`;
+      const r = await fetch(url(kind, p)); if (!r.ok) throw new Error('fetch ' + r.status);
+      files[kind === 'l' ? lname(p) : p.name] = [new Uint8Array(await r.arrayBuffer()), {level: 0}];
+      done += kind === 'l' ? p.lb : p.bytes; btn.textContent = `Preparing… ${Math.round(done / total * 100)}%`;
     }
     const blob = new Blob([fflate.zipSync(files)], {type: 'application/zip'});
     const a = document.createElement('a');
@@ -666,6 +698,27 @@ async function sendNote(){
   finally { btn.disabled = false; btn.textContent = 'Send'; }
 }
 
+/* ================= slideshow ================= */
+const show_ = { on: false, i: 0, t: null, flip: 0 };
+function slideshow(start){
+  const el = $('#show');
+  if (!start){ show_.on = false; clearTimeout(show_.t); el.classList.remove('open'); return; }
+  show_.on = true; show_.i = cur; el.classList.add('open'); slideStep();
+}
+function slideStep(){
+  if (!show_.on) return;
+  const p = guest.photos[show_.i], img = [$('#s0'), $('#s1')][show_.flip], other = [$('#s0'), $('#s1')][1 - show_.flip];
+  const sx = 1.04 + Math.random() * .08, ex = 1.12 + Math.random() * .1, dx = (Math.random() - .5) * 6, dy = (Math.random() - .5) * 6;
+  img.style.transition = 'none'; img.style.transform = `scale(${sx}) translate(${-dx}%,${-dy}%)`;
+  img.onload = () => { requestAnimationFrame(() => {
+    img.style.transition = ''; img.style.transform = `scale(${ex}) translate(${dx}%,${dy}%)`; img.classList.add('on'); other.classList.remove('on'); }); };
+  img.src = url('p', p);
+  $('#scap').innerHTML = `<b>${esc(guest.name)}</b>${show_.i + 1} / ${guest.count}`;
+  show_.flip = 1 - show_.flip;
+  show_.t = setTimeout(() => { show_.i = (show_.i + 1) % guest.count; slideStep(); }, 4200);
+  new Image().src = url('p', guest.photos[(show_.i + 1) % guest.count]);
+}
+
 /* ================= wiring ================= */
 function wire(){
   wireReel();
@@ -681,6 +734,8 @@ function wire(){
   });
   $('#galclose').addEventListener('click', closeGallery);
   $('#vclose').addEventListener('click', closeGallery);
+  $('#play').addEventListener('click', () => slideshow(true));
+  $('#show').addEventListener('click', () => { show(show_.i); slideshow(false); });
   $('#selclear').addEventListener('click', () => { sel.clear(); updateSel(); });
   let lp = null;                                                        // long-press a thumbnail to (de)select it
   $('#galgrid').addEventListener('pointerdown', e => { const g = e.target.closest('.g'); if (!g) return;
@@ -710,10 +765,12 @@ function wire(){
   $('#gbSend').addEventListener('click', sendNote);
   $('#gbmsg').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) sendNote(); e.stopPropagation(); });
   $('#dlall').addEventListener('click', () => {
-    if (guest.zip){ const a = document.createElement('a'); a.href = `${FILES}/g/${key}.zip`; a.download = ''; a.click(); toast('Your zip is on its way'); }
+    if (guest.wbytes != null){ const a = document.createElement('a'); a.href = `${FILES}/g/${key}-web.zip`; a.download = ''; a.click(); toast('Your zip is on its way'); }
+    else if (guest.zip){ const a = document.createElement('a'); a.href = `${FILES}/g/${key}.zip`; a.download = ''; a.click(); toast('Your zip is on its way'); }
     else zipDownload(guest.photos.map((_, i) => i), 'all');
   });
   addEventListener('keydown', e => {
+    if (show_.on){ if (e.key === 'Escape'){ show(show_.i); slideshow(false); } else if (e.key === 'ArrowRight'){ clearTimeout(show_.t); show_.i = (show_.i + 1) % guest.count; slideStep(); } return; }
     if (!$('#gal').classList.contains('open')) return;
     if (e.key === 'ArrowRight') show(cur + 1);
     if (e.key === 'ArrowLeft') show(cur - 1);
