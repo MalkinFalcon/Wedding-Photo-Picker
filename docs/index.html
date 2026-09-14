@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#15120e">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%8D%3C/text%3E%3C/svg%3E">
 <title>Susie & Dima</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
@@ -72,7 +73,8 @@
   #strip::before{left:2.2vw} #strip::after{right:2.2vw}
   #track{will-change:transform}
   .frame{padding:3.2vw 0}
-  .frame img{display:block;width:100%;height:auto;border:1px solid #000;filter:saturate(1.05) contrast(1.04);
+  .frame .ph{position:relative;width:100%;background:#151210}
+  .frame img{position:absolute;inset:0;display:block;width:100%;height:100%;border:1px solid #000;filter:saturate(1.05) contrast(1.04);
              -webkit-user-drag:none;pointer-events:none}
   @media (max-width:767px), (pointer:coarse) and (max-width:1024px){
     #drift{display:none} #reel{display:block}
@@ -202,7 +204,7 @@
   #sstrip::before{left:min(.9vw,8px)} #sstrip::after{right:min(.9vw,8px)}
   #strack{will-change:transform}
   #strack .frame{padding:min(2vw,18px) 0}
-  #strack .frame img{display:block;width:100%;height:auto;border:1px solid #000;-webkit-user-drag:none;pointer-events:none}
+  #strack .frame img{filter:none}
   #show .ctl{position:absolute;left:0;right:0;top:max(12px,env(safe-area-inset-top));display:flex;justify-content:center;gap:6px;
              padding:0 12px;z-index:2;opacity:.92}
   #show .ctl button{padding:8px 12px;border-radius:999px;border:1px solid #ffffff33;background:#0009;color:#fff;font:500 11px/1 Inter,sans-serif;
@@ -390,7 +392,7 @@ function pickDiverse(photos, n){
 function createReel(container, track, secs){
   const R = { y: 0, speed: 0, n: 0, run: null, touch: null, coast: 0, secs, frames: [] };
   R.build = list => {
-    track.innerHTML = (list.map(p => `<div class="frame"><img src="${p.f}" alt="" decoding="async"></div>`).join('')).repeat(2);
+    track.innerHTML = (list.map(p => `<div class="frame"><div class="ph" style="padding-top:${(100 * (p.h || 2) / (p.w || 3)).toFixed(2)}%"><img src="${p.f}" alt="" decoding="async"></div></div>`).join('')).repeat(2);
     R.n = list.length; R.y = 0; R.speed = 0; R.frames = [...track.children];
   };
   R.jumpTo = i => { const f = R.frames[i]; if (f) R.y = f.offsetTop; };
@@ -683,7 +685,7 @@ function slideshow(start){
   show_.list = show_.fav ? [...sel].sort((a, b) => a - b) : guest.photos.map((_, i) => i);
   $('#sfav').style.display = sel.size > 1 ? '' : 'none'; $('#sfav').classList.toggle('on', show_.fav);
   const kind = isMobile() ? 'm' : 'p';
-  sreel.build(show_.list.map(i => ({f: url(kind, guest.photos[i])})));
+  sreel.build(show_.list.map(i => ({f: url(kind, guest.photos[i]), w: guest.photos[i].w, h: guest.photos[i].h})));
   el.classList.add('open'); show_.on = true;
   requestAnimationFrame(() => { const at = show_.list.indexOf(cur); sreel.jumpTo(at < 0 ? 0 : at); sreel.tick(0); });
 }
