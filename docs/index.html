@@ -28,15 +28,27 @@
   #hero h1{font:italic 400 clamp(44px,8vw,92px)/1 "Cormorant Garamond",serif;letter-spacing:.02em;
            text-shadow:0 2px 30px #000c,0 0 80px #0009}
   #hero h1 span{font-style:normal;font-weight:600}
-  #sub{margin-top:10px;color:var(--dim);letter-spacing:.32em;text-transform:uppercase;font-size:12px;text-shadow:0 1px 12px #000}
+  #sub{margin-top:10px;color:var(--dim);letter-spacing:.32em;text-transform:uppercase;font-size:12px;text-shadow:0 1px 12px #000;white-space:nowrap}
   #greet{margin-top:14px;font:italic 400 clamp(22px,3vw,30px)/1.2 "Cormorant Garamond",serif;color:var(--ink);
          text-shadow:0 2px 20px #000c;display:none}
   #greet b{font-style:normal;font-weight:600;color:var(--accent)}
+  #greet small{display:block;font-size:.72em;color:var(--dim);margin-top:4px}
   #greet.on{display:block}
-  #cta{margin-top:30px;padding:14px 30px;border:1px solid #f3ede4aa;border-radius:999px;background:#15120ecc;
-       color:var(--ink);font:500 14px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;
-       cursor:pointer;backdrop-filter:blur(8px);transition:background .2s,transform .2s,opacity .3s}
-  #cta:hover{background:var(--ink);color:var(--bg);transform:translateY(-1px)}
+  #cta{position:relative;margin-top:26px;padding:15px 26px 15px 22px;border:0;border-radius:999px;background:var(--ink);
+       color:var(--bg);font:600 14px/1 Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;
+       display:inline-flex;align-items:center;gap:10px;box-shadow:0 10px 30px #0009,0 0 0 0 #f3ede466;
+       transition:transform .2s,opacity .3s,box-shadow .2s;animation:pulse 2.4s ease-out infinite}
+  #cta svg{width:20px;height:20px;flex:none}
+  #cta .chev{margin-left:2px;font-weight:400;font-size:16px;opacity:.7}
+  #cta:hover{transform:translateY(-1px) scale(1.03);animation:none;box-shadow:0 14px 34px #000b}
+  #cta:active{transform:scale(.98)}
+  @keyframes pulse{0%{box-shadow:0 10px 30px #0009,0 0 0 0 #f3ede466}70%{box-shadow:0 10px 30px #0009,0 0 0 14px #f3ede400}100%{box-shadow:0 10px 30px #0009,0 0 0 0 #f3ede400}}
+  #tophint{position:fixed;top:max(14px,env(safe-area-inset-top));left:0;right:0;z-index:21;display:none;justify-content:center;
+           pointer-events:none}
+  #tophint span{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;background:#15120ecc;
+                color:var(--dim);font-size:11.5px;letter-spacing:.06em;backdrop-filter:blur(8px);border:1px solid #ffffff14}
+  #tophint svg{width:15px;height:15px}
+  #hero.gone ~ #tophint{opacity:0}
   #cta.busy{opacity:.6;pointer-events:none}
   #hint{margin-top:14px;color:var(--dim);font-size:11.5px;letter-spacing:.06em;opacity:.8}
 
@@ -65,8 +77,9 @@
     #hero{justify-content:flex-end;padding-bottom:max(48px,env(safe-area-inset-bottom) + 34px)}
     #hero::before{width:100vw;height:60vh;bottom:0;border-radius:0;
       background:linear-gradient(to bottom,transparent,#15120ecc 45%,#15120ef5)}
-    #hero h1{font-size:clamp(40px,12vw,64px)} #sub{font-size:11px} #cta{margin-top:20px}
-    #greet{font-size:22px;margin-top:10px}
+    #hero h1{font-size:clamp(40px,12vw,64px)} #sub{font-size:10.5px;letter-spacing:.22em} #cta{margin-top:18px}
+    #greet{font-size:23px;margin-top:8px}
+    #hint{display:none} #tophint{display:flex;transition:opacity .4s}
   }
 
   /* ---------- shared UI ---------- */
@@ -175,11 +188,12 @@
 <div id="fade"></div>
 <canvas id="confetti"></canvas>
 
+<div id="tophint"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4"/></svg>Drag the film to scroll it</span></div>
 <div id="hero">
   <h1>Susie <span>&amp;</span> Dima</h1>
   <p id="sub">Thank you for celebrating with us</p>
   <p id="greet"></p>
-  <button id="cta">Show my photos</button>
+  <button id="cta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 15h18M8 4v16M16 4v16"/></svg><span id="ctatxt">Show my photos</span><span class="chev">›</span></button>
   <p id="hint"></p>
   <button id="gbBtn">Leave us a note ✍</button>
 </div>
@@ -284,10 +298,10 @@ async function loadGuest(k){
     guest = await r.json(); key = k; pendingKey = '';
     store.set('key', k);
     try { history.replaceState(null, '', location.pathname); } catch (e) {}
-    $('#greet').innerHTML = `Hi <b>${esc(guest.name)}</b> — we found you in ${guest.count} photo${guest.count === 1 ? '' : 's'}`;
+    $('#greet').innerHTML = `Hi <b>${esc(guest.name)}</b><small>we found you in ${guest.count} photo${guest.count === 1 ? '' : 's'}</small>`;
     $('#greet').classList.add('on');
-    $('#cta').textContent = 'See my photos';
-    $('#hint').textContent = isMobile() ? 'Drag the film to scroll it' : 'Drag a photo to throw it';
+    $('#ctatxt').textContent = 'See my photos';
+    $('#hint').textContent = 'Drag a photo to throw it';
     renderGallery(); ambient();
     if (GUESTBOOK){ $('#gbBtn').classList.add('on'); $('#gbBtn2').classList.add('on'); }
     return true;
@@ -303,11 +317,25 @@ const url = (kind, p) => `${FILES}/${kind}/${p.id}.${kind === 'o' ? p.ext : 'jpg
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
 function ambientList(){
   const pinned = showcase.filter(p => p.pin), rest = shuffle(showcase.filter(p => !p.pin));
-  const mine = guest ? shuffle(guest.photos).slice(0, AMBIENT_GUEST_MAX).map(p => ({f: url('p', p), w: p.w, h: p.h})) : [];
+  const mine = guest ? pickDiverse(guest.photos, AMBIENT_GUEST_MAX).map(p => ({f: url('p', p), w: p.w, h: p.h})) : [];
   const fill = rest.slice(0, Math.max(0, AMBIENT_TOTAL - pinned.length - mine.length));
   return shuffle([...pinned, ...mine, ...fill]);
 }
 function ambient(){ const list = ambientList(); buildReel(list); buildDrift(list); }
+// Greedy farthest-first on the perceptual hash the build attaches to each photo: burst shots of one
+// moment look alike, so they rarely both get picked. Falls back to random if hashes are missing.
+function pickDiverse(photos, n){
+  if (photos.length <= n) return shuffle(photos);
+  if (!photos.every(p => p.h)) return shuffle(photos).slice(0, n);
+  const dist = (a, b) => { let x = BigInt('0x' + a) ^ BigInt('0x' + b), c = 0; while (x){ c += Number(x & 1n); x >>= 1n; } return c; };
+  const pool = shuffle(photos), out = [pool.pop()];
+  while (out.length < n && pool.length){
+    let best = -1, bi = 0;
+    pool.forEach((p, i) => { const d = Math.min(...out.map(o => dist(o.h, p.h))) + Math.random() * .5; if (d > best){ best = d; bi = i; } });
+    out.push(pool.splice(bi, 1)[0]);
+  }
+  return shuffle(out);
+}
 
 /* ================= mobile film reel ================= */
 const SECS_PER_PHOTO = 3.2;                                  // resting pace

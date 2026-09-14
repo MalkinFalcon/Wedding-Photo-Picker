@@ -86,6 +86,16 @@ def load_env():
     env['PUBLIC_URL'] = env['PUBLIC_URL'].rstrip('/')
     return env
 
+def dhash(path):
+    """64-bit difference hash of an image - near-duplicates land within a few bits of each other."""
+    with Image.open(path) as im:
+        g = im.convert('L').resize((9, 8), Image.LANCZOS)
+    px = list(g.getdata()); bits = 0
+    for r in range(8):
+        for c in range(8):
+            bits = (bits << 1) | (px[r * 9 + c] > px[r * 9 + c + 1])
+    return f'{bits:016x}'
+
 def web_image(src, dst, px, q):
     """Resize src to fit px, save jpeg at dst; returns (w, h). Cached on disk."""
     if os.path.isfile(dst):
@@ -193,6 +203,7 @@ def main():
         log(f'showcase: nothing starred yet - using the {len(proto)} prototype photos (press W in the picker)')
 
     # --- per-photo web assets (deduped across guests) -------------------------------------
+    hashes = load_json(os.path.join(OUT, 'hashes.json'), {})
     info = {}
     for n, pid in enumerate(sorted(assign), 1):
         oid, src = ids[pid], src_of(pid)
@@ -200,9 +211,11 @@ def main():
         ext = 'jpg' if ext == 'jpeg' else ext
         w, h = web_image(src, os.path.join(OUT, 'p', oid + '.jpg'), PREVIEW_PX, 84)
         web_image(src, os.path.join(OUT, 't', oid + '.jpg'), THUMB_PX, 80)
-        info[pid] = {'id': oid, 'ext': ext, 'w': w, 'h': h, 'bytes': os.path.getsize(src),
+        if oid not in hashes: hashes[oid] = dhash(os.path.join(OUT, 't', oid + '.jpg'))
+        info[pid] = {'id': oid, 'ext': ext, 'w': w, 'h': h, 'bytes': os.path.getsize(src), 'hash': hashes[oid],
                      'name': f'{DL_PREFIX}_{pid[:-4]}.{ext}', 'src': src}
         if n % 50 == 0: log(f'  web assets {n}/{len(assign)}')
+    save_json(os.path.join(OUT, 'hashes.json'), hashes)
     log(f'photos: {len(info)} unique, {mb(sum(i["bytes"] for i in info.values()))} of originals')
 
     # --- guest manifests + zips ---------------------------------------------------------------
@@ -228,7 +241,7 @@ def main():
             os.remove(zpath)
         save_json(os.path.join(gdir, r['url_key'] + '.json'), {
             'name': r['display_name'], 'count': len(pids), 'bytes': total, 'zip': zippable,
-            'photos': [{k: info[p][k] for k in ('id', 'ext', 'w', 'h', 'bytes', 'name')} for p in pids],
+            'photos': [{**{k: info[p][k] for k in ('id', 'ext', 'w', 'h', 'bytes', 'name')}, 'h': info[p]['hash']} for p in pids],
         })
         log(f"  {r['display_name']:28} {len(pids):3} photos  {mb(total):>8}  {'zip' if zippable else 'no zip (too big)'}   #{r['url_key']}")
     log(f'zips: {mb(zip_total)}')
