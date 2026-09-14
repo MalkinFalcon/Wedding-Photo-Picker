@@ -144,8 +144,13 @@
   #galfoot .hint{flex:1;color:var(--dim);font-size:12px;min-width:160px}
   #galfoot #selrow{padding:8px 12px;border-radius:12px;background:#ffffff0a;border:1px solid #ffffff12}
   #galfoot #selrow:not(.on){display:none}
-  #selinfo{flex:1;font-size:13px;color:var(--ink)}
-  #selinfo small{display:block;color:var(--dim);font-size:11.5px}
+  #stripBtn:not(.ok){display:none}
+  #gal.selecting .g{cursor:copy}
+  #gal.selecting #vpic::after{content:"Tap photos below to select them";position:absolute;left:50%;top:10px;transform:translateX(-50%);
+    padding:6px 12px;border-radius:999px;background:#0009;color:#fff;font-size:11.5px;letter-spacing:.04em;white-space:nowrap}
+  #vpic{position:relative}
+  #selinfo{flex:1;font-size:13px;color:var(--ink);white-space:nowrap}
+  #selinfo .lnk{margin-left:6px}
   #vclose{position:absolute;right:10px;top:10px;width:38px;height:38px;border-radius:50%;border:0;background:#0009;
           color:#fff;font-size:20px;line-height:1;cursor:pointer;z-index:2;display:none;backdrop-filter:blur(6px)}
   @media (max-width:767px), (pointer:coarse) and (max-width:1024px){
@@ -160,7 +165,7 @@
     #galfoot{gap:8px;padding:10px 12px} .btn{padding:11px 13px;font-size:11px}
     #galfoot .row{justify-content:stretch} #galfoot .row .btn{flex:1;text-align:center}
     #galfoot .hint{flex-basis:100%;text-align:center;min-width:0}
-    #selrow{padding:8px 10px} #selinfo{flex-basis:100%}
+    #selrow{padding:8px 10px} #selinfo{flex-basis:100%;text-align:center}
     #viewer{height:50%}
   }
 
@@ -229,7 +234,7 @@
 <div id="keybox" class="overlay">
   <form id="keyform">
     <h2>Your photos</h2>
-    <p>Type the name from your personal link<br>e.g. <em>arthur-and-naz</em></p>
+    <p>Type the name from your link, e.g. <em>arthur-and-naz</em></p>
     <input id="keyin" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="40" placeholder="your-name">
     <div id="keyerr"></div>
     <div class="row">
@@ -256,7 +261,7 @@
       <div id="vbar">
         <span class="n" id="vn"></span>
         <a class="btn primary" id="vdl" download>↓ Save</a>
-        <button class="btn" id="vsel">✓ Select</button>
+        <button class="btn" id="vsel">Select</button>
         <button class="btn" id="play" title="Slideshow">▶ Play</button>
         <a class="lnk" id="vorig" download>original</a>
       </div>
@@ -289,7 +294,7 @@
 
 <div id="gbbox" class="overlay"><div class="box">
   <h2>Guestbook</h2>
-  <div class="sub">A line for Susie &amp; Dima — everyone with a link can read these.</div>
+  <div class="sub">Everyone with a link can read these.</div>
   <textarea id="gbmsg" maxlength="600" placeholder="Write something…"></textarea>
   <div class="row" style="justify-content:flex-end">
     <button class="btn" id="gbClose">Close</button>
@@ -578,7 +583,7 @@ function renderGallery(){
   $('#dlall').textContent = `Download all (${mb(web ? guest.wbytes : guest.bytes)})`;
   const dlo = $('#dlorig'); dlo.style.display = (web && guest.zip) ? '' : 'none';
   dlo.textContent = `All originals (${mb(guest.bytes)})`; dlo.href = `${FILES}/g/${key}.zip`;
-  $('#galhint').textContent = 'Tap ✓ Select under a photo to download just a few, or make a booth strip';
+  $('#galhint').textContent = 'Select photos to download a few, or make a booth strip';
   sel.clear(); show(0, true); updateSel();
 }
 function show(i, instant){
@@ -604,12 +609,14 @@ function updateSel(){
   $('#selrow').classList.toggle('on', sel.size > 0);
   const lbytes = [...sel].reduce((s, i) => s + (guest.photos[i].lb || guest.photos[i].bytes), 0);
   $('#dlsel').textContent = `Download ${sel.size} (${mb(lbytes)})`;
-  const sb = $('#stripBtn'), ok = sel.size >= 2 && sel.size <= 4; sb.disabled = !ok;
-  sb.textContent = ok ? `Booth strip (${sel.size})` : 'Booth strip';
-  const origLink = guest.photos.some(p => p.lb != null) ? ` · <button class="lnk" id="dlselo">originals (${mb(bytes)})</button>` : '';
-  $('#selinfo').innerHTML = `<b>${sel.size} selected</b><small>${ok ? 'Download them, or turn them into a photo-booth strip' : sel.size < 2 ? 'Pick 2–4 for a booth strip' : 'Booth strips take up to 4 — download works for any number'}${origLink}</small>`;
+  const sb = $('#stripBtn'), ok = sel.size >= 2 && sel.size <= 4; sb.classList.toggle('ok', ok); sb.disabled = !ok;
+  sb.textContent = `Booth strip (${sel.size})`;
+  const origLink = guest.photos.some(p => p.lb != null) ? `<button class="lnk" id="dlselo">originals · ${mb(bytes)}</button>` : '';
+  $('#selinfo').innerHTML = `<b>${sel.size} selected</b>${origLink}`;
   const so = $('#dlselo'); if (so) so.addEventListener('click', () => zipDownload([...sel].sort((a, b) => a - b), 'originals', 'o'));
-  $('#vsel').textContent = sel.has(cur) ? '✓ Selected' : '✓ Select';
+  const on = $('#gal').classList.contains('selecting');
+  $('#vsel').textContent = on ? 'Done' : 'Select'; $('#vsel').classList.toggle('on', on);
+  $('#selmode').textContent = on ? 'Done' : 'Select'; $('#selmode').classList.toggle('on', on);
   $('#vsel').classList.toggle('on', sel.has(cur));
 }
 
@@ -642,9 +649,12 @@ async function makeStrip(indexes){
   const btn = $('#stripBtn'), was = btn.textContent; btn.disabled = true; btn.textContent = 'Developing…';
   try {
     await document.fonts.load('italic 400 48px "Cormorant Garamond"').catch(() => {});
-    const imgs = await Promise.all(items.map(p => new Promise((res, rej) => {
-      const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => res(im); im.onerror = rej; im.src = url('p', p);
-    })));
+    const imgs = await Promise.all(items.map(async p => {
+      const r = await fetch(url('p', p), {mode: 'cors'}); if (!r.ok) throw new Error('image ' + r.status);
+      const b = await r.blob(), u = URL.createObjectURL(b);
+      try { return await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('decode')); im.src = u; }); }
+      finally { setTimeout(() => URL.revokeObjectURL(u), 5000); }
+    }));
     const W = 720, F = 620, M = 50, G = 26, FOOT = 130;
     const cv = document.createElement('canvas'); cv.width = W; cv.height = M + imgs.length * (F + G) - G + FOOT;
     const ctx = cv.getContext('2d');
@@ -658,13 +668,13 @@ async function makeStrip(indexes){
     ctx.fillStyle = '#15120e'; ctx.textAlign = 'center';
     ctx.font = 'italic 400 44px "Cormorant Garamond", serif'; ctx.fillText('Susie & Dima', W / 2, cv.height - FOOT + 62);
     ctx.fillStyle = '#8a8178'; ctx.font = '500 15px Inter, sans-serif'; ctx.fillText('M E L B O U R N E   ·   2 0 2 6', W / 2, cv.height - FOOT + 94);
-    const blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', .92));
+    const blob = await new Promise((res, rej) => { try { cv.toBlob(b => b ? res(b) : rej(new Error('export')), 'image/jpeg', .92); } catch (e) { rej(e); } });
     makeStrip.file = new File([blob], 'SusieAndDima_booth_strip.jpg', {type: 'image/jpeg'});
     const u = URL.createObjectURL(blob);
     $('#stripimg').src = u; $('#stripSave').href = u;
     $('#stripShare').style.display = (navigator.canShare && navigator.canShare({files: [makeStrip.file]})) ? '' : 'none';
     $('#stripbox').classList.add('open');
-  } catch (e) { toast('Could not build the strip — try again'); console.error(e); }
+  } catch (e) { toast('Strip failed: ' + (e.message || e)); console.error(e); }
   finally { btn.disabled = false; btn.textContent = was; }
 }
 
@@ -739,22 +749,21 @@ function wire(){
   $('#selclear').addEventListener('click', () => { sel.clear(); updateSel(); });
   let lp = null;                                                        // long-press a thumbnail to (de)select it
   $('#galgrid').addEventListener('pointerdown', e => { const g = e.target.closest('.g'); if (!g) return;
+    if ($('#gal').classList.contains('selecting')) return;
     lp = setTimeout(() => { lp = null; const i = +g.dataset.i; sel.has(i) ? sel.delete(i) : sel.add(i); updateSel(); toast(sel.has(i) ? 'Selected' : 'Removed from selection'); }, 450); });
   ['pointerup', 'pointercancel', 'pointerleave', 'pointermove'].forEach(t => $('#galgrid').addEventListener(t, e => { if (t !== 'pointermove' || Math.abs(e.movementX) + Math.abs(e.movementY) > 6){ clearTimeout(lp); lp = null; } }));
-  $('#selmode').addEventListener('click', () => {
-    const on = $('#gal').classList.toggle('selecting');
-    $('#selmode').classList.toggle('on', on); $('#selmode').textContent = on ? 'Done' : 'Select';
-    if (on) toast('Tap photos to pick them, then Download selected');
-  });
+  const toggleSelecting = () => { const on = $('#gal').classList.toggle('selecting'); updateSel(); if (on && !sel.size) toast('Tap photos to select them'); };
+  $('#selmode').addEventListener('click', toggleSelecting);
+  $('#vsel').addEventListener('click', toggleSelecting);
+  $('#vpic').addEventListener('click', () => { if ($('#gal').classList.contains('selecting')){ sel.has(cur) ? sel.delete(cur) : sel.add(cur); updateSel(); } });
   $('#galgrid').addEventListener('click', e => {
     const g = e.target.closest('.g'); if (!g) return;
     const i = +g.dataset.i;
-    if ($('#gal').classList.contains('selecting')){ sel.has(i) ? sel.delete(i) : sel.add(i); updateSel(); }
+    if ($('#gal').classList.contains('selecting')){ sel.has(i) ? sel.delete(i) : sel.add(i); updateSel(); show(i, true); return; }
     show(i);
   });
   $('#prev').addEventListener('click', () => show(cur - 1));
   $('#next').addEventListener('click', () => show(cur + 1));
-  $('#vsel').addEventListener('click', () => { sel.has(cur) ? sel.delete(cur) : sel.add(cur); updateSel(); });
   $('#dlsel').addEventListener('click', () => zipDownload([...sel].sort((a, b) => a - b), 'selection'));
   $('#stripBtn').addEventListener('click', () => makeStrip([...sel].sort((a, b) => a - b)));
   $('#stripClose').addEventListener('click', () => $('#stripbox').classList.remove('open'));
