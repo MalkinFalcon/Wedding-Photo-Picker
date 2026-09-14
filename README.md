@@ -27,7 +27,8 @@ per-guest page where each guest downloads their own photos at original quality.
    python build.py --push
    ```
    First run uploads ~4 GB (originals) + zips; later runs only upload what changed.
-5. **Send links**: `https://susieanddima.com/#<url_key>` — keys are in `guests.csv` after the build.
+5. **Send links**: `https://susieanddima.com/#<url_key>` — keys are name slugs (`#arthur-and-naz`), listed in `guests.csv`.
+   Guests can also type the name on the site if a link gets mangled.
 
 ## Bucket CORS (once, in the dashboard)
 
@@ -54,6 +55,13 @@ python serve_files.py            # files on :8791
 python -m http.server 8790 --directory docs
 ```
 Open http://localhost:8790/#<url_key>.
+
+## Landing page rules
+
+- Always the 10 pinned showcase photos, plus up to 10 of the guest's own, filled to 20 from the rest of the showcase.
+- Desktop: polaroids drift; drag one to throw it. "See my photos" gathers them into the centre, then the gallery fades in.
+- Mobile: film reel rolls; "See my photos" spins it up (~3.6 s, blur) then the gallery fades in. Confetti on first reveal.
+- Guests tagged C / M / C&M in the picker also receive the China_All / Melbourne_All pools.
 
 ## How a guest's page works
 

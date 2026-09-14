@@ -392,6 +392,7 @@ function confetti(){
     vx: (Math.random() - .5) * 900, vy: -300 - Math.random() * 700, r: 3 + Math.random() * 5,
     a: Math.random() * 6.3, av: (Math.random() - .5) * 12, c: cols[Math.random() * cols.length | 0] }));
   const t0 = performance.now();
+  setTimeout(() => ctx.clearRect(0, 0, W, H), 2600);     // belt and braces if rAF is throttled
   (function frame(now){
     const t = (now - t0) / 1000; if (t > 2.2){ ctx.clearRect(0, 0, W, H); return; }
     ctx.clearRect(0, 0, W, H);
