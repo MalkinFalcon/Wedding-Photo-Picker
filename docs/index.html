@@ -144,7 +144,6 @@
   #galfoot .hint{flex:1;color:var(--dim);font-size:12px;min-width:160px}
   #galfoot #selrow{padding:8px 12px;border-radius:12px;background:#ffffff0a;border:1px solid #ffffff12}
   #galfoot #selrow:not(.on){display:none}
-  #stripBtn:not(.ok){display:none}
   .shareonly{display:none} body.canshare .shareonly{display:inline-flex;align-items:center;justify-content:center}
   body.canshare .zipbtn{display:none}
   #gal.selecting .g{cursor:copy}
@@ -172,9 +171,7 @@
   }
 
   /* ---------- booth strip + guestbook ---------- */
-  #stripbox,#gbbox{align-items:center;justify-content:center;padding:20px;z-index:52}
-  #stripbox .box{display:flex;flex-direction:column;align-items:center;gap:14px;max-height:100%}
-  #stripimg{max-height:72vh;max-width:min(92vw,400px);box-shadow:0 24px 70px #000;background:#fbf9f4}
+  #gbbox{align-items:center;justify-content:center;padding:20px;z-index:52}
   .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
   #gbbox .box{width:min(560px,100%);max-height:100%;display:flex;flex-direction:column;gap:12px}
   #gbbox h2{font:italic 400 32px/1.1 "Cormorant Garamond",serif}
@@ -203,6 +200,12 @@
     animation:grain .35s steps(3) infinite}
   @keyframes grain{0%{transform:translate(0,0)}33%{transform:translate(-3%,2%)}66%{transform:translate(2%,-3%)}100%{transform:translate(-1%,-1%)}}
   #show .vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,#000c 100%)}
+  #show .ctl{position:absolute;left:0;right:0;top:max(12px,env(safe-area-inset-top));display:flex;justify-content:center;gap:6px;
+             padding:0 12px;z-index:2;opacity:.92}
+  #show .ctl button{padding:8px 12px;border-radius:999px;border:1px solid #ffffff33;background:#0009;color:#fff;font:500 11px/1 Inter,sans-serif;
+                    letter-spacing:.08em;text-transform:uppercase;cursor:pointer;backdrop-filter:blur(6px)}
+  #show .ctl button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  #show .ctl #sx{font-size:16px;padding:6px 12px}
   #show .cap{position:absolute;left:0;right:0;bottom:max(22px,env(safe-area-inset-bottom));text-align:center;color:#f3ede4aa;
              font-size:12px;letter-spacing:.14em;text-transform:uppercase;text-shadow:0 1px 8px #000}
   #show .cap b{display:block;font:italic 400 26px/1.2 "Cormorant Garamond",serif;text-transform:none;letter-spacing:0;color:#f3ede4;margin-bottom:6px}
@@ -273,7 +276,6 @@
   <div id="galfoot">
     <div class="row" id="selrow">
       <span id="selinfo"></span>
-      <button class="btn" id="stripBtn">Booth strip</button>
       <button class="btn primary shareonly" id="selPhotos" data-label="">Save to Photos</button>
       <button class="btn primary zipbtn" id="dlsel">Download</button>
       <button class="btn" id="selclear">Clear</button>
@@ -286,16 +288,7 @@
     </div>
   </div>
 </div>
-<div id="show"><img id="s0" alt=""><img id="s1" alt=""><div class="grain"></div><div class="vig"></div><div class="cap" id="scap"></div></div>
-<div id="stripbox" class="overlay"><div class="box">
-  <img id="stripimg" alt="Your photo-booth strip">
-  <div class="row">
-    <a class="btn primary" id="stripSave" download="SusieAndDima_booth_strip.jpg">↓ Save</a>
-    <button class="btn" id="stripShare">Share</button>
-    <button class="btn" id="stripClose">Close</button>
-  </div>
-</div></div>
-
+<div id="show"><img id="s0" alt=""><img id="s1" alt=""><div class="grain"></div><div class="vig"></div><div class="ctl"><button id="sx" aria-label="Exit">×</button><button data-sp="7">Slow</button><button data-sp="4.2" class="on">Normal</button><button data-sp="2.2">Fast</button><button id="sfav">♥ Selected</button></div><div class="cap" id="scap"></div></div>
 <div id="gbbox" class="overlay"><div class="box">
   <h2>Guestbook</h2>
   <div class="sub">Everyone with a link can read these.</div>
@@ -594,8 +587,8 @@ function renderGallery(){
   const dlo = $('#dlorig'); dlo.style.display = (web && guest.zip) ? '' : 'none';
   dlo.textContent = `All originals (${mb(guest.bytes)})`; dlo.href = `${FILES}/g/${key}.zip`;
   $('#galhint').innerHTML = document.body.classList.contains('canshare')
-    ? `Select photos to save a few, or make a booth strip · <button class="lnk" id="dlallz">or zip · ${mb(web ? guest.wbytes : guest.bytes)}</button>`
-    : 'Select photos to download a few, or make a booth strip';
+    ? `Select photos to save just a few · <button class="lnk" id="dlallz">or zip · ${mb(web ? guest.wbytes : guest.bytes)}</button>`
+    : 'Select photos to download just a few';
   const az = $('#dlallz'); if (az) az.addEventListener('click', () => $('#dlall').click());
   sel.clear(); show(0, true); updateSel();
 }
@@ -624,8 +617,6 @@ function updateSel(){
   const lbytes = [...sel].reduce((s, i) => s + (guest.photos[i].lb || guest.photos[i].bytes), 0);
   $('#dlsel').textContent = `Download ${sel.size} (${mb(lbytes)})`;
   const sp = $('#selPhotos'); if (!batchQ.sel){ sp.dataset.label = PLATFORM === 'android' ? `Save ${sel.size} to phone` : `Save ${sel.size} to Photos`; sp.textContent = sp.dataset.label; }
-  const sb = $('#stripBtn'), ok = sel.size >= 2 && sel.size <= 4; sb.classList.toggle('ok', ok); sb.disabled = !ok;
-  sb.textContent = `Booth strip (${sel.size})`;
   const origLink = guest.photos.some(p => p.lb != null) ? `<button class="lnk" id="dlselo">originals · ${mb(bytes)}</button>` : '';
   const zipLink = document.body.classList.contains('canshare') ? `<button class="lnk" id="dlselz">zip · ${mb(lbytes)}</button>` : '';
   $('#selinfo').innerHTML = `<b>${sel.size} selected</b>${zipLink}${origLink}`;
@@ -660,41 +651,6 @@ async function zipDownload(indexes, label, kind){
   } finally { btn.disabled = false; btn.textContent = was; }
 }
 
-/* ================= photo-booth strip ================= */
-async function makeStrip(indexes){
-  const items = indexes.slice(0, 4).map(i => guest.photos[i]);
-  const btn = $('#stripBtn'), was = btn.textContent; btn.disabled = true; btn.textContent = 'Developing…';
-  try {
-    await document.fonts.load('italic 400 48px "Cormorant Garamond"').catch(() => {});
-    const imgs = await Promise.all(items.map(async p => {
-      const r = await fetch(url('p', p), {mode: 'cors'}); if (!r.ok) throw new Error('image ' + r.status);
-      const b = await r.blob(), u = URL.createObjectURL(b);
-      try { return await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('decode')); im.src = u; }); }
-      finally { setTimeout(() => URL.revokeObjectURL(u), 5000); }
-    }));
-    const W = 720, F = 620, M = 50, G = 26, FOOT = 130;
-    const cv = document.createElement('canvas'); cv.width = W; cv.height = M + imgs.length * (F + G) - G + FOOT;
-    const ctx = cv.getContext('2d');
-    ctx.fillStyle = '#fbf9f4'; ctx.fillRect(0, 0, cv.width, cv.height);
-    imgs.forEach((im, i) => {
-      const y = M + i * (F + G), s = Math.max(F / im.width, F / im.height), w = im.width * s, h = im.height * s;
-      ctx.save(); ctx.beginPath(); ctx.rect(M, y, F, F); ctx.clip();
-      ctx.drawImage(im, M + (F - w) / 2, y + (F - h) / 2, w, h); ctx.restore();
-      ctx.strokeStyle = '#00000014'; ctx.lineWidth = 1; ctx.strokeRect(M + .5, y + .5, F - 1, F - 1);
-    });
-    ctx.fillStyle = '#15120e'; ctx.textAlign = 'center';
-    ctx.font = 'italic 400 44px "Cormorant Garamond", serif'; ctx.fillText('Susie & Dima', W / 2, cv.height - FOOT + 62);
-    ctx.fillStyle = '#8a8178'; ctx.font = '500 15px Inter, sans-serif'; ctx.fillText('M E L B O U R N E   ·   2 0 2 6', W / 2, cv.height - FOOT + 94);
-    const blob = await new Promise((res, rej) => { try { cv.toBlob(b => b ? res(b) : rej(new Error('export')), 'image/jpeg', .92); } catch (e) { rej(e); } });
-    makeStrip.file = new File([blob], 'SusieAndDima_booth_strip.jpg', {type: 'image/jpeg'});
-    const u = URL.createObjectURL(blob);
-    $('#stripimg').src = u; $('#stripSave').href = u;
-    $('#stripShare').style.display = (navigator.canShare && navigator.canShare({files: [makeStrip.file]})) ? '' : 'none';
-    $('#stripbox').classList.add('open');
-  } catch (e) { toast('Strip failed: ' + (e.message || e)); console.error(e); }
-  finally { btn.disabled = false; btn.textContent = was; }
-}
-
 /* ================= guestbook ================= */
 async function openGuestbook(){
   if (!GUESTBOOK) return;
@@ -726,25 +682,34 @@ async function sendNote(){
 }
 
 /* ================= slideshow ================= */
-const show_ = { on: false, i: 0, t: null, flip: 0 };
+const show_ = { on: false, i: 0, t: null, flip: 0, dur: 4.2, fav: false, list: [] };
 function slideshow(start){
   const el = $('#show');
   if (!start){ show_.on = false; clearTimeout(show_.t); el.classList.remove('open'); return; }
-  show_.on = true; show_.i = cur; el.classList.add('open'); slideStep();
+  show_.on = true; show_.fav = show_.fav && sel.size > 1;
+  show_.list = show_.fav ? [...sel].sort((a, b) => a - b) : guest.photos.map((_, i) => i);
+  show_.i = Math.max(0, show_.list.indexOf(cur));
+  $('#sfav').style.display = sel.size > 1 ? '' : 'none'; $('#sfav').classList.toggle('on', show_.fav);
+  el.classList.add('open'); slideStep();
 }
 function slideStep(){
   if (!show_.on) return;
-  const p = guest.photos[show_.i], img = [$('#s0'), $('#s1')][show_.flip], other = [$('#s0'), $('#s1')][1 - show_.flip];
+  const idx = show_.list[show_.i], p = guest.photos[idx];
+  const img = [$('#s0'), $('#s1')][show_.flip], other = [$('#s0'), $('#s1')][1 - show_.flip];
   const sx = 1.04 + Math.random() * .08, ex = 1.12 + Math.random() * .1, dx = (Math.random() - .5) * 6, dy = (Math.random() - .5) * 6;
   img.style.transition = 'none'; img.style.transform = `scale(${sx}) translate(${-dx}%,${-dy}%)`;
   img.onload = () => { requestAnimationFrame(() => {
-    img.style.transition = ''; img.style.transform = `scale(${ex}) translate(${dx}%,${dy}%)`; img.classList.add('on'); other.classList.remove('on'); }); };
+    img.style.transition = `opacity 1.2s ease, transform ${show_.dur + 2}s linear`;
+    img.style.transform = `scale(${ex}) translate(${dx}%,${dy}%)`; img.classList.add('on'); other.classList.remove('on'); }); };
   img.src = url('p', p);
-  $('#scap').innerHTML = `<b>${esc(guest.name)}</b>${show_.i + 1} / ${guest.count}`;
+  $('#scap').innerHTML = `<b>${esc(guest.name)}</b>${show_.i + 1} / ${show_.list.length}${show_.fav ? ' · selected' : ''}`;
   show_.flip = 1 - show_.flip;
-  show_.t = setTimeout(() => { show_.i = (show_.i + 1) % guest.count; slideStep(); }, 4200);
-  new Image().src = url('p', guest.photos[(show_.i + 1) % guest.count]);
+  clearTimeout(show_.t);
+  show_.t = setTimeout(slideNext, show_.dur * 1000);
+  new Image().src = url('p', guest.photos[show_.list[(show_.i + 1) % show_.list.length]]);
 }
+function slideNext(){ show_.i = (show_.i + 1) % show_.list.length; slideStep(); }
+function slideExit(){ show(show_.list[show_.i]); slideshow(false); }
 
 /* ================= save to Photos (share sheet with files) ================= */
 const fileCache = new Map();                       // oid -> File (large tier), for one-tap single saves
@@ -764,17 +729,18 @@ const batchQ = { all: null, sel: null };            // pending batches per butto
 async function saveToPhotos(which, indexes, btn){
   if (PLATFORM === 'android'){                      // straight to Downloads -> Gallery picks them up
     if (btn.disabled) return;
-    btn.disabled = true;
     const items = indexes.map(i => guest.photos[i]);
-    toast(items.length > 1 ? `Saving ${items.length} photos — allow "multiple downloads" if asked` : 'Saving…');
+    if (items.length > 1 && !confirm(`Save ${items.length} photos to your phone?\n\nIf your browser asks to allow multiple downloads, tap Allow. They land in Downloads / Gallery.`)) return;
+    btn.disabled = true;
     for (let i = 0; i < items.length; i++){
       const a = document.createElement('a'); a.href = url('l', items[i]); a.download = lname(items[i]); a.rel = 'noopener';
       document.body.appendChild(a); a.click(); a.remove();
       btn.textContent = `Saving ${i + 1} / ${items.length}`;
-      await new Promise(r => setTimeout(r, 450));
+      await new Promise(r => setTimeout(r, 700));
     }
     btn.textContent = btn.dataset.label; btn.disabled = false;
     toast('Done — check your Gallery or Downloads'); confetti();
+    setTimeout(() => toast('Nothing arrived? Refresh the page and try again, or use the zip'), 5000);
     return;
   }
   const q = batchQ[which];
@@ -824,7 +790,12 @@ function wire(){
     if (f){ e.preventDefault(); shareFiles([f]); }
     else toast('Saving to Files — use the share sheet next time');
   });
-  $('#show').addEventListener('click', () => { show(show_.i); slideshow(false); });
+  $('#show').addEventListener('click', e => { if (!e.target.closest('.ctl')) slideNext(); });
+  $('#sx').addEventListener('click', slideExit);
+  $('#sfav').addEventListener('click', () => { show_.fav = !show_.fav; slideshow(true); });
+  document.querySelectorAll('#show [data-sp]').forEach(b => b.addEventListener('click', () => {
+    show_.dur = +b.dataset.sp; document.querySelectorAll('#show [data-sp]').forEach(x => x.classList.toggle('on', x === b));
+    clearTimeout(show_.t); show_.t = setTimeout(slideNext, show_.dur * 1000); }));
   $('#selclear').addEventListener('click', () => { sel.clear(); updateSel(); });
   let lp = null;                                                        // long-press a thumbnail to (de)select it
   $('#galgrid').addEventListener('pointerdown', e => { const g = e.target.closest('.g'); if (!g) return;
@@ -844,9 +815,6 @@ function wire(){
   $('#prev').addEventListener('click', () => show(cur - 1));
   $('#next').addEventListener('click', () => show(cur + 1));
   $('#dlsel').addEventListener('click', () => zipDownload([...sel].sort((a, b) => a - b), 'selection'));
-  $('#stripBtn').addEventListener('click', () => makeStrip([...sel].sort((a, b) => a - b)));
-  $('#stripClose').addEventListener('click', () => $('#stripbox').classList.remove('open'));
-  $('#stripShare').addEventListener('click', () => navigator.share({files: [makeStrip.file], title: 'Susie & Dima'}).catch(() => {}));
   $('#gbBtn').addEventListener('click', openGuestbook);
   $('#gbBtn2').addEventListener('click', openGuestbook);
   $('#gbClose').addEventListener('click', () => $('#gbbox').classList.remove('open'));
@@ -858,11 +826,11 @@ function wire(){
     else zipDownload(guest.photos.map((_, i) => i), 'all');
   });
   addEventListener('keydown', e => {
-    if (show_.on){ if (e.key === 'Escape'){ show(show_.i); slideshow(false); } else if (e.key === 'ArrowRight'){ clearTimeout(show_.t); show_.i = (show_.i + 1) % guest.count; slideStep(); } return; }
+    if (show_.on){ if (e.key === 'Escape') slideExit(); else if (e.key === 'ArrowRight') slideNext(); return; }
     if (!$('#gal').classList.contains('open')) return;
     if (e.key === 'ArrowRight') show(cur + 1);
     if (e.key === 'ArrowLeft') show(cur - 1);
-    if (e.key === 'Escape'){ for (const id of ['#stripbox', '#gbbox']) if ($(id).classList.contains('open')) return $(id).classList.remove('open'); closeGallery(); }
+    if (e.key === 'Escape'){ if ($('#gbbox').classList.contains('open')) return $('#gbbox').classList.remove('open'); closeGallery(); }
   });
   let sx = 0, sy = 0;
   $('#viewer').addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, {passive: true});
