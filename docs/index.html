@@ -191,26 +191,24 @@
   #gbBtn.on{display:inline} #gbBtn:hover{color:var(--ink)}
   #gbBtn2{display:none} #gbBtn2.on{display:inline-block}
 
-  /* ---------- slideshow ---------- */
-  #show{position:fixed;inset:0;z-index:55;background:#000;display:none;overflow:hidden;cursor:pointer}
+  /* ---------- slideshow: full-width film reel ---------- */
+  #show{position:fixed;inset:0;z-index:55;background:#000;display:none;overflow:hidden}
   #show.open{display:block}
-  #show img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1.2s ease,transform 7s linear;
-            will-change:transform,opacity}
-  #show img.on{opacity:1}
-  #show .grain{position:absolute;inset:-50%;width:200%;height:200%;pointer-events:none;opacity:.14;mix-blend-mode:screen;
-    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-    animation:grain .35s steps(3) infinite}
-  @keyframes grain{0%{transform:translate(0,0)}33%{transform:translate(-3%,2%)}66%{transform:translate(2%,-3%)}100%{transform:translate(-1%,-1%)}}
-  #show .vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,#000c 100%)}
+  #sreel{position:absolute;inset:0;overflow:hidden;touch-action:none}
+  #sstrip{position:absolute;left:50%;top:0;bottom:0;width:min(96vw,900px);transform:translateX(-50%);background:#0b0a09;
+          padding:0 min(3.6vw,34px);box-shadow:0 0 60px #000,inset 0 0 0 1px #000}
+  #sstrip::before,#sstrip::after{content:"";position:absolute;top:0;bottom:0;width:min(1.8vw,17px);opacity:.9;
+    background:repeating-linear-gradient(to bottom,transparent 0 1.3vw,#3a3631 1.3vw 2.9vw,transparent 2.9vw 4.2vw)}
+  #sstrip::before{left:min(.9vw,8px)} #sstrip::after{right:min(.9vw,8px)}
+  #strack{will-change:transform}
+  #strack .frame{padding:min(2vw,18px) 0}
+  #strack .frame img{display:block;width:100%;height:auto;border:1px solid #000;-webkit-user-drag:none;pointer-events:none}
   #show .ctl{position:absolute;left:0;right:0;top:max(12px,env(safe-area-inset-top));display:flex;justify-content:center;gap:6px;
              padding:0 12px;z-index:2;opacity:.92}
   #show .ctl button{padding:8px 12px;border-radius:999px;border:1px solid #ffffff33;background:#0009;color:#fff;font:500 11px/1 Inter,sans-serif;
                     letter-spacing:.08em;text-transform:uppercase;cursor:pointer;backdrop-filter:blur(6px)}
   #show .ctl button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
   #show .ctl #sx{font-size:16px;padding:6px 12px}
-  #show .cap{position:absolute;left:0;right:0;bottom:max(22px,env(safe-area-inset-bottom));text-align:center;color:#f3ede4aa;
-             font-size:12px;letter-spacing:.14em;text-transform:uppercase;text-shadow:0 1px 8px #000}
-  #show .cap b{display:block;font:italic 400 26px/1.2 "Cormorant Garamond",serif;text-transform:none;letter-spacing:0;color:#f3ede4;margin-bottom:6px}
   .lnk{background:none;border:0;color:var(--dim);font:inherit;font-size:11.5px;letter-spacing:.04em;cursor:pointer;
        text-decoration:underline;text-underline-offset:3px;padding:0}
   .lnk:hover{color:var(--ink)}
@@ -279,7 +277,7 @@
     </div>
   </div>
 </div>
-<div id="show"><img id="s0" alt=""><img id="s1" alt=""><div class="grain"></div><div class="vig"></div><div class="ctl"><button id="sx" aria-label="Exit">×</button><button data-sp="7">Slow</button><button data-sp="4.2" class="on">Normal</button><button data-sp="2.2">Fast</button><button id="sfav">♥ Selected</button></div><div class="cap" id="scap"></div></div>
+<div id="show"><div id="sreel"><div id="sstrip"><div id="strack"></div></div></div><div class="ctl"><button id="sx" aria-label="Exit">×</button><button data-sp="7">Slow</button><button data-sp="4.2" class="on">Normal</button><button data-sp="2.2">Fast</button><button id="sfav">♥ Selected</button></div></div>
 <div id="gbbox" class="overlay"><div class="box">
   <h2>Guestbook</h2>
   <div class="sub">Everyone with a link can read these.</div>
@@ -316,10 +314,8 @@ const AMBIENT_TOTAL = 20, AMBIENT_GUEST_MAX = 10, CLIENT_ZIP_MAX = 400e6;
   FILES = (new URLSearchParams(location.search).get('files') || cfg.files || FILES_FALLBACK).replace(/\/$/, '');
   GUESTBOOK = (new URLSearchParams(location.search).get('guestbook') || cfg.guestbook || '').replace(/\/$/, '');
   ambient(); wire(); requestAnimationFrame(tick);
-  try {
-    if (isMobile() && /android/i.test(navigator.userAgent)) document.body.classList.add('canshare', 'android');
-    else if (isMobile() && navigator.canShare && navigator.canShare({files: [new File(['x'], 'x.jpg', {type: 'image/jpeg'})]})) document.body.classList.add('canshare', 'ios');
-  } catch (e) {}
+  // Share-sheet / multi-download saving is parked for now (uneven across phones); zips are the primary path.
+  // To re-enable: add 'canshare' + 'android'/'ios' to <body> here.
   PLATFORM = document.body.classList.contains('android') ? 'android' : document.body.classList.contains('ios') ? 'ios' : 'desktop';
   const fromHash = decodeURIComponent(location.hash.replace(/^#\/?(k=)?/, '')).trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
   pendingKey = fromHash;
@@ -392,55 +388,51 @@ function pickDiverse(photos, n){
   return shuffle(out);
 }
 
-/* ================= mobile film reel ================= */
-const SECS_PER_PHOTO = 3.2;                                  // resting pace
-const reel = { y: 0, speed: 0, n: 0, run: null, touch: null, coast: 0 };
-function buildReel(list){
-  const t = $('#track');
-  t.innerHTML = (list.map(p => `<div class="frame"><img src="${p.f}" alt="" decoding="async"></div>`).join('')).repeat(2);
-  reel.n = list.length; reel.y = 0;
-}
-function reelTick(dt){
-  const t = $('#track'), half = t.offsetHeight / 2;
-  if (!half || !reel.n) return;
-  const photoH = half / reel.n, base = photoH / SECS_PER_PHOTO;
-  const now = performance.now();
-  if (reel.touch){                                           // finger owns it
-    reel.speed = 0;
-  } else if (reel.run){                                      // the fly-through: brisk, steady, readable
-    const p = (now - reel.run.t0) / reel.run.dur;
-    reel.speed += (reel.run.pps * photoH - reel.speed) * Math.min(1, dt * 5);
-    if (p >= 1 && reel.run.done){ const d = reel.run.done; reel.run = null; d(); }
-  } else if (now < reel.coast){                              // momentum after a flick, easing back to base
-    reel.speed += (base - reel.speed) * Math.min(1, dt * 1.5);
-  } else {
-    reel.speed += (base - reel.speed) * Math.min(1, dt * 4);
-  }
-  reel.y = ((reel.y + reel.speed * dt) % half + half) % half;
-  t.style.transform = `translate3d(0,${-reel.y}px,0)`;
-}
-function wireReel(){
-  const el = $('#reel');
-  el.addEventListener('touchstart', e => {
-    if (reel.run) return;
-    const y = e.touches[0].clientY;
-    reel.touch = {y, ly: y, lt: performance.now(), v: 0};
-  }, {passive: true});
-  el.addEventListener('touchmove', e => {
-    const s = reel.touch; if (!s) return;
-    const y = e.touches[0].clientY, now = performance.now(), dt = Math.max(1, now - s.lt) / 1000;
-    const dy = y - s.ly; s.ly = y; s.lt = now;
-    s.v = s.v * .4 + (-dy / dt) * .6;                          // content follows the finger (finger up = film up)
-    const half = $('#track').offsetHeight / 2;
-    reel.y = ((reel.y - dy) % half + half) % half;
-  }, {passive: true});
-  const end = () => {
-    const s = reel.touch; if (!s) return;
-    reel.touch = null; reel.speed = clamp(s.v, -4000, 4000); reel.coast = performance.now() + 1800;
+/* ================= film reels (landing + slideshow share one engine) ================= */
+function createReel(container, track, secs){
+  const R = { y: 0, speed: 0, n: 0, run: null, touch: null, coast: 0, secs, frames: [] };
+  R.build = list => {
+    track.innerHTML = (list.map(p => `<div class="frame"><img src="${p.f}" alt="" decoding="async"></div>`).join('')).repeat(2);
+    R.n = list.length; R.y = 0; R.speed = 0; R.frames = [...track.children];
   };
-  el.addEventListener('touchend', end); el.addEventListener('touchcancel', end);
+  R.jumpTo = i => { const f = R.frames[i]; if (f) R.y = f.offsetTop; };
+  R.nearest = () => {                                               // which photo is nearest the middle of the screen
+    const half = track.offsetHeight / 2, mid = R.y + container.clientHeight / 2; let best = 0, bd = 1e9;
+    R.frames.slice(0, R.n).forEach((f, i) => { const c = f.offsetTop + f.offsetHeight / 2; const d = Math.min(Math.abs(c - mid), Math.abs(c + half - mid)); if (d < bd){ bd = d; best = i; } });
+    return best;
+  };
+  R.tick = dt => {
+    const half = track.offsetHeight / 2;
+    if (!half || !R.n) return;
+    const photoH = half / R.n, base = photoH / R.secs, now = performance.now();
+    if (R.touch) R.speed = 0;
+    else if (R.run){
+      const p = (now - R.run.t0) / R.run.dur;
+      R.speed += (R.run.pps * photoH - R.speed) * Math.min(1, dt * 5);
+      if (p >= 1 && R.run.done){ const d = R.run.done; R.run = null; d(); }
+    }
+    else if (now < R.coast) R.speed += (base - R.speed) * Math.min(1, dt * 1.5);
+    else R.speed += (base - R.speed) * Math.min(1, dt * 4);
+    R.y = ((R.y + R.speed * dt) % half + half) % half;
+    track.style.transform = `translate3d(0,${-R.y}px,0)`;
+  };
+  container.addEventListener('touchstart', e => { if (R.run) return; const y = e.touches[0].clientY; R.touch = {y, ly: y, lt: performance.now(), v: 0}; }, {passive: true});
+  container.addEventListener('touchmove', e => {
+    const t = R.touch; if (!t) return;
+    const y = e.touches[0].clientY, now = performance.now(), dt = Math.max(1, now - t.lt) / 1000, dy = y - t.ly; t.ly = y; t.lt = now;
+    t.v = t.v * .4 + (-dy / dt) * .6;
+    const half = track.offsetHeight / 2; R.y = ((R.y - dy) % half + half) % half;
+  }, {passive: true});
+  const end = () => { const t = R.touch; if (!t) return; R.touch = null; R.speed = clamp(t.v, -4000, 4000); R.coast = performance.now() + 1800; };
+  container.addEventListener('touchend', end); container.addEventListener('touchcancel', end);
+  container.addEventListener('wheel', e => { const half = track.offsetHeight / 2; if (!half) return; R.y = ((R.y + e.deltaY) % half + half) % half; R.coast = performance.now() + 1500; R.speed = 0; }, {passive: true});
+  return R;
 }
-function flyThrough(photos, secs, done){ reel.run = {t0: performance.now(), dur: secs * 1000, pps: photos / secs, done}; }
+const reel = createReel($('#reel'), $('#track'), 3.2);
+const sreel = createReel($('#sreel'), $('#strack'), 4.2);
+function buildReel(list){ reel.build(list); }
+function reelTick(dt){ reel.tick(dt); }
+function wireReel(){}
 
 /* ================= desktop drifting polaroids (drag to throw) ================= */
 const cards = [];
@@ -524,6 +516,7 @@ let last = performance.now();
 function tick(now){
   const dt = Math.min(.05, (now - last) / 1000); last = now;
   isMobile() ? reelTick(dt) : driftTick(dt);
+  if (show_.on) sreel.tick(dt);
   requestAnimationFrame(tick);
 }
 
@@ -688,35 +681,20 @@ async function sendNote(){
   finally { btn.disabled = false; btn.textContent = 'Send'; }
 }
 
-/* ================= slideshow ================= */
-const show_ = { on: false, i: 0, t: null, flip: 0, dur: 4.2, fav: false, list: [] };
+/* ================= slideshow: the guest's photos as a full-width reel ================= */
+const show_ = { on: false, fav: false, list: [] };
 function slideshow(start){
   const el = $('#show');
-  if (!start){ show_.on = false; clearTimeout(show_.t); el.classList.remove('open'); return; }
-  show_.on = true; show_.fav = show_.fav && sel.size > 1;
+  if (!start){ show_.on = false; el.classList.remove('open'); return; }
+  show_.fav = show_.fav && sel.size > 1;
   show_.list = show_.fav ? [...sel].sort((a, b) => a - b) : guest.photos.map((_, i) => i);
-  show_.i = Math.max(0, show_.list.indexOf(cur));
   $('#sfav').style.display = sel.size > 1 ? '' : 'none'; $('#sfav').classList.toggle('on', show_.fav);
-  el.classList.add('open'); slideStep();
+  const kind = isMobile() ? 'm' : 'p';
+  sreel.build(show_.list.map(i => ({f: url(kind, guest.photos[i])})));
+  el.classList.add('open'); show_.on = true;
+  requestAnimationFrame(() => { const at = show_.list.indexOf(cur); sreel.jumpTo(at < 0 ? 0 : at); sreel.tick(0); });
 }
-function slideStep(){
-  if (!show_.on) return;
-  const idx = show_.list[show_.i], p = guest.photos[idx];
-  const img = [$('#s0'), $('#s1')][show_.flip], other = [$('#s0'), $('#s1')][1 - show_.flip];
-  const sx = 1.04 + Math.random() * .08, ex = 1.12 + Math.random() * .1, dx = (Math.random() - .5) * 6, dy = (Math.random() - .5) * 6;
-  img.style.transition = 'none'; img.style.transform = `scale(${sx}) translate(${-dx}%,${-dy}%)`;
-  img.onload = () => { requestAnimationFrame(() => {
-    img.style.transition = `opacity 1.2s ease, transform ${show_.dur + 2}s linear`;
-    img.style.transform = `scale(${ex}) translate(${dx}%,${dy}%)`; img.classList.add('on'); other.classList.remove('on'); }); };
-  img.src = url('p', p);
-  $('#scap').innerHTML = `<b>${esc(guest.name)}</b>${show_.i + 1} / ${show_.list.length}${show_.fav ? ' · selected' : ''}`;
-  show_.flip = 1 - show_.flip;
-  clearTimeout(show_.t);
-  show_.t = setTimeout(slideNext, show_.dur * 1000);
-  new Image().src = url('p', guest.photos[show_.list[(show_.i + 1) % show_.list.length]]);
-}
-function slideNext(){ show_.i = (show_.i + 1) % show_.list.length; slideStep(); }
-function slideExit(){ show(show_.list[show_.i]); slideshow(false); }
+function slideExit(){ const i = show_.list[sreel.nearest()]; slideshow(false); if (i != null) show(i, true); }
 
 /* ================= save to Photos (share sheet with files) ================= */
 const fileCache = new Map();                       // oid -> File (large tier), for one-tap single saves
@@ -788,12 +766,10 @@ function wire(){
     if (f){ e.preventDefault(); shareFiles([f]); }
     else toast('Saving to Files — use the share sheet next time');
   });
-  $('#show').addEventListener('click', e => { if (!e.target.closest('.ctl')) slideNext(); });
   $('#sx').addEventListener('click', slideExit);
   $('#sfav').addEventListener('click', () => { show_.fav = !show_.fav; slideshow(true); });
   document.querySelectorAll('#show [data-sp]').forEach(b => b.addEventListener('click', () => {
-    show_.dur = +b.dataset.sp; document.querySelectorAll('#show [data-sp]').forEach(x => x.classList.toggle('on', x === b));
-    clearTimeout(show_.t); show_.t = setTimeout(slideNext, show_.dur * 1000); }));
+    sreel.secs = +b.dataset.sp; document.querySelectorAll('#show [data-sp]').forEach(x => x.classList.toggle('on', x === b)); }));
   $('#selclear').addEventListener('click', () => { sel.clear(); updateSel(); });
   let lp = null;                                                        // long-press a thumbnail to (de)select it
   $('#galgrid').addEventListener('pointerdown', e => { const g = e.target.closest('.g'); if (!g) return;
@@ -824,7 +800,7 @@ function wire(){
     else zipDownload(guest.photos.map((_, i) => i), 'all');
   });
   addEventListener('keydown', e => {
-    if (show_.on){ if (e.key === 'Escape') slideExit(); else if (e.key === 'ArrowRight') slideNext(); return; }
+    if (show_.on){ if (e.key === 'Escape') slideExit(); return; }
     if (!$('#gal').classList.contains('open')) return;
     if (e.key === 'ArrowRight') show(cur + 1);
     if (e.key === 'ArrowLeft') show(cur - 1);
