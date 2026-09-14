@@ -40,7 +40,7 @@ ENV     = os.path.join(SITE, '.r2.env')
 ZIP_MAX_MB   = 250                    # bigger bundles get per-photo / selected downloads only
 SHOWCASE_PX  = 1600
 PREVIEW_PX   = 1600
-LARGE_PX     = 2400                   # the default download: phone/print-friendly, ~1-1.5 MB
+LARGE_PX     = 3000                   # the default download; q88 keeps the biggest guest zip ~85 MB (<100 MB for everyone)
 THUMB_PX     = 480
 ALPHABET     = 'abcdefghjkmnpqrstuvwxyz23456789'   # no i l o 0 1 - these get read aloud / typed
 DL_PREFIX    = 'SusieAndDima'
@@ -212,7 +212,7 @@ def main():
         ext = 'jpg' if ext == 'jpeg' else ext
         w, h = web_image(src, os.path.join(OUT, 'p', oid + '.jpg'), PREVIEW_PX, 84)
         web_image(src, os.path.join(OUT, 't', oid + '.jpg'), THUMB_PX, 80)
-        web_image(src, os.path.join(OUT, 'l', oid + '.jpg'), LARGE_PX, 86)
+        web_image(src, os.path.join(OUT, 'l', oid + '.jpg'), LARGE_PX, 88)
         if oid not in hashes: hashes[oid] = dhash(os.path.join(OUT, 't', oid + '.jpg'))
         info[pid] = {'id': oid, 'ext': ext, 'w': w, 'h': h, 'bytes': os.path.getsize(src), 'hash': hashes[oid],
                      'lb': os.path.getsize(os.path.join(OUT, 'l', oid + '.jpg')),
