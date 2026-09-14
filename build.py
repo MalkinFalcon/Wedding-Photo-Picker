@@ -20,6 +20,10 @@ Usage
   python build.py --push         also commit docs/ and push to GitHub
 """
 import os, sys, json, csv, random, zipfile, argparse, mimetypes
+try:                                   # HTTPS on this PC is intercepted (AV); trust the Windows cert store
+    import truststore; truststore.inject_into_ssl()
+except ImportError:
+    pass
 import pillow_heif; pillow_heif.register_heif_opener()
 from PIL import Image, ImageOps, ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -47,6 +51,11 @@ ORIGINS      = ['https://susieanddima.com', 'https://www.susieanddima.com',
 def log(*a): print(*a, flush=True)
 def rand(n): return ''.join(random.SystemRandom().choice(ALPHABET) for _ in range(n))
 def mb(b): return f'{b / 1e6:.0f} MB'
+def slug(name):
+    import unicodedata
+    s = unicodedata.normalize('NFKD', name).encode('ascii', 'ignore').decode().lower().replace('&', ' and ')
+    s = __import__('re').sub(r'[^a-z0-9]+', '-', s).strip('-')
+    return s or 'guest'
 
 def load_json(p, default):
     try:
@@ -140,8 +149,9 @@ def main():
     for r in guests:
         if web_names.get(r['app_name'], '').strip(): r['display_name'] = web_names[r['app_name']].strip()
         if not r['display_name']: r['display_name'] = r['app_name']
-        if not r['url_key']:
-            while (k := rand(8)) in used: pass
+        if not r['url_key']:                     # name-based link, e.g. #arthur-and-naz (dupes get -2, -3 ...)
+            base = slug(r['display_name']); k, i = base, 1
+            while k in used: i += 1; k = f'{base}-{i}'
             r['url_key'] = k; used.add(k)
         if r['app_name'] not in known:
             log(f"!! guests.csv row '{r['app_name']}' is not a person in the app - it will get no photos")
@@ -242,9 +252,12 @@ def upload(env, info, guests, gdir):
                       endpoint_url=f"https://{env['ACCOUNT_ID']}.r2.cloudflarestorage.com",
                       aws_access_key_id=env['ACCESS_KEY'], aws_secret_access_key=env['SECRET_KEY'])
     B = env['BUCKET']
-    s3.put_bucket_cors(Bucket=B, CORSConfiguration={'CORSRules': [{
-        'AllowedOrigins': ORIGINS, 'AllowedMethods': ['GET', 'HEAD'],
-        'AllowedHeaders': ['*'], 'ExposeHeaders': ['Content-Length'], 'MaxAgeSeconds': 86400}]})
+    try:
+        s3.put_bucket_cors(Bucket=B, CORSConfiguration={'CORSRules': [{
+            'AllowedOrigins': ORIGINS, 'AllowedMethods': ['GET', 'HEAD'],
+            'AllowedHeaders': ['*'], 'ExposeHeaders': ['Content-Length'], 'MaxAgeSeconds': 86400}]})
+    except Exception as e:      # object-only tokens cannot set bucket CORS; set it once in the dashboard instead
+        log(f'!! could not set bucket CORS ({type(e).__name__}) - set it in the R2 dashboard (see README); continuing')
 
     existing = {}
     for page in s3.get_paginator('list_objects_v2').paginate(Bucket=B):

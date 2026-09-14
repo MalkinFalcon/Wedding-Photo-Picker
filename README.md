@@ -29,6 +29,23 @@ per-guest page where each guest downloads their own photos at original quality.
    First run uploads ~4 GB (originals) + zips; later runs only upload what changed.
 5. **Send links**: `https://susieanddima.com/#<url_key>` — keys are in `guests.csv` after the build.
 
+## Bucket CORS (once, in the dashboard)
+
+The API token is object-level, so the build cannot set this itself. Bucket → Settings → **CORS Policy → Add**, paste:
+
+```json
+[
+  {
+    "AllowedOrigins": ["https://susieanddima.com", "https://www.susieanddima.com"],
+    "AllowedMethods": ["GET", "HEAD"],
+    "AllowedHeaders": ["*"],
+    "ExposeHeaders": ["Content-Length"],
+    "MaxAgeSeconds": 86400
+  }
+]
+```
+Without it, images and single downloads still work; only "Download selected" (browser-side zip) fails.
+
 ## Local preview (no R2 needed)
 
 ```

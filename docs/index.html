@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
+<meta name="theme-color" content="#15120e">
 <title>Susie & Dima</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
@@ -11,33 +12,41 @@
   :root{ --bg:#15120e; --ink:#f3ede4; --dim:#a89f92; --paper:#fbf9f4; --accent:#d9b56c; }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
-            font:15px/1.5 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+            font:15px/1.5 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
   body::before{content:"";position:fixed;inset:0;pointer-events:none;
     background:radial-gradient(ellipse at 50% 40%,transparent 40%,#000a 100%)}
   button{font:inherit}
 
   /* ---------- hero ---------- */
   #hero{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
-        text-align:center;pointer-events:none;z-index:20;padding:24px}
+        text-align:center;pointer-events:none;z-index:20;padding:24px;transition:opacity .4s,transform .4s}
+  #hero.gone{opacity:0;transform:scale(.96);pointer-events:none}
+  #hero.gone > *{pointer-events:none}
   #hero > *{pointer-events:auto}
   #hero::before{content:"";position:absolute;width:min(70vw,720px);height:min(50vh,360px);border-radius:50%;
     background:radial-gradient(ellipse,#15120ee6 0%,#15120eaa 45%,transparent 72%);z-index:-1}
   #hero h1{font:italic 400 clamp(44px,8vw,92px)/1 "Cormorant Garamond",serif;letter-spacing:.02em;
            text-shadow:0 2px 30px #000c,0 0 80px #0009}
   #hero h1 span{font-style:normal;font-weight:600}
-  #hero p{margin-top:10px;color:var(--dim);letter-spacing:.32em;text-transform:uppercase;font-size:12px;
-          text-shadow:0 1px 12px #000}
-  #cta{margin-top:34px;padding:14px 30px;border:1px solid #f3ede4aa;border-radius:999px;background:#15120ecc;
+  #sub{margin-top:10px;color:var(--dim);letter-spacing:.32em;text-transform:uppercase;font-size:12px;
+       text-shadow:0 1px 12px #000;transition:opacity .3s}
+  #greet{margin-top:14px;font:italic 400 clamp(22px,3vw,30px)/1.2 "Cormorant Garamond",serif;color:var(--ink);
+         text-shadow:0 2px 20px #000c;display:none}
+  #greet b{font-style:normal;font-weight:600;color:var(--accent)}
+  #greet.on{display:block}
+  #cta{margin-top:30px;padding:14px 30px;border:1px solid #f3ede4aa;border-radius:999px;background:#15120ecc;
        color:var(--ink);font:500 14px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;
-       cursor:pointer;backdrop-filter:blur(8px);transition:background .2s,transform .2s}
+       cursor:pointer;backdrop-filter:blur(8px);transition:background .2s,transform .2s,opacity .3s}
   #cta:hover{background:var(--ink);color:var(--bg);transform:translateY(-1px)}
-  #cta b{font-weight:500;text-transform:none;letter-spacing:0}
+  #hint{margin-top:14px;color:var(--dim);font-size:11.5px;letter-spacing:.06em;opacity:.8}
 
   /* ---------- desktop: drifting polaroids ---------- */
   #drift{position:fixed;inset:0;overflow:hidden}
   .card{position:absolute;left:0;top:0;background:var(--paper);padding:11px 11px 40px;
-        box-shadow:0 12px 40px #000b,0 2px 6px #0008;will-change:transform;cursor:pointer;transition:box-shadow .3s}
-  .card img{display:block;width:100%;height:auto;background:#222}
+        box-shadow:0 12px 40px #000b,0 2px 6px #0008;will-change:transform;cursor:grab;transition:box-shadow .3s;
+        user-select:none;-webkit-user-drag:none;touch-action:none}
+  .card.drag{cursor:grabbing}
+  .card img{display:block;width:100%;height:auto;background:#222;pointer-events:none;-webkit-user-drag:none}
   .card:hover{box-shadow:0 30px 70px #000d,0 4px 10px #000a}
 
   /* ---------- mobile: film reel ---------- */
@@ -47,17 +56,17 @@
   #strip::before,#strip::after{content:"";position:absolute;top:0;bottom:0;width:4.2vw;
     background:repeating-linear-gradient(to bottom,transparent 0 2.4vw,#3a3631 2.4vw 5.2vw,transparent 5.2vw 7.6vw);opacity:.9}
   #strip::before{left:2.2vw} #strip::after{right:2.2vw}
-  #track{animation:roll var(--dur,90s) linear infinite;will-change:transform}
+  #track{will-change:transform,filter}
   .frame{padding:3.2vw 0}
-  .frame img{display:block;width:100%;height:auto;border:1px solid #000;filter:saturate(1.05) contrast(1.04)}
-  @keyframes roll{from{transform:translateY(0)}to{transform:translateY(-50%)}}
-  #reel.paused #track{animation-play-state:paused}
+  .frame img{display:block;width:100%;height:auto;border:1px solid #000;filter:saturate(1.05) contrast(1.04);
+             -webkit-user-drag:none}
   @media (max-width:767px), (pointer:coarse) and (max-width:1024px){
     #drift{display:none} #reel{display:block}
     #hero{justify-content:flex-end;padding-bottom:max(48px,env(safe-area-inset-bottom) + 34px)}
-    #hero::before{width:100vw;height:55vh;bottom:0;border-radius:0;
+    #hero::before{width:100vw;height:60vh;bottom:0;border-radius:0;
       background:linear-gradient(to bottom,transparent,#15120ecc 45%,#15120ef5)}
-    #hero h1{font-size:clamp(40px,12vw,64px)} #hero p{font-size:11px} #cta{margin-top:22px}
+    #hero h1{font-size:clamp(40px,12vw,64px)} #sub{font-size:11px} #cta{margin-top:20px}
+    #greet{font-size:22px;margin-top:10px}
   }
 
   /* ---------- shared UI ---------- */
@@ -67,16 +76,20 @@
   .btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
   .btn.on{background:var(--accent);color:#15120e;border-color:var(--accent)}
   .btn:disabled{opacity:.35;cursor:default}
-  .overlay{position:fixed;inset:0;z-index:40;background:#15120ef2;backdrop-filter:blur(14px);display:none}
-  .overlay.open{display:flex}
+  .overlay{position:fixed;inset:0;z-index:40;background:#15120ef2;backdrop-filter:blur(14px);display:flex;
+           opacity:0;visibility:hidden;pointer-events:none;transition:opacity .55s ease,visibility 0s .55s}
+  .overlay.open{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .55s ease,visibility 0s}
+  #fade{position:fixed;inset:0;z-index:35;background:#000;opacity:0;pointer-events:none;transition:opacity .35s}
+  #fade.on{opacity:1}
+  #confetti{position:fixed;inset:0;z-index:48;pointer-events:none}
 
   /* ---------- key prompt ---------- */
   #keybox{align-items:center;justify-content:center;padding:24px}
-  #keybox form{width:min(420px,100%);text-align:center}
+  #keybox form{width:min(440px,100%);text-align:center}
   #keybox h2{font:italic 400 34px/1.1 "Cormorant Garamond",serif;margin-bottom:10px}
-  #keybox p{color:var(--dim);font-size:14px;margin-bottom:22px}
+  #keybox p{color:var(--dim);font-size:14px;margin-bottom:22px;line-height:1.5}
   #keyin{width:100%;padding:14px 18px;border:1px solid #f3ede455;border-radius:12px;background:#0000;color:var(--ink);
-         font:500 22px/1 Inter,sans-serif;letter-spacing:.2em;text-align:center;text-transform:lowercase;outline:none}
+         font:500 20px/1 Inter,sans-serif;letter-spacing:.06em;text-align:center;text-transform:lowercase;outline:none}
   #keyin:focus{border-color:var(--accent)}
   #keyerr{color:#ff9c9c;font-size:13px;min-height:20px;margin-top:10px}
   #keybox .row{display:flex;gap:10px;justify-content:center;margin-top:14px}
@@ -89,8 +102,10 @@
   #galbar h2 b{font-style:normal;font-weight:600}
   #galbar .n{color:var(--dim);font-size:13px;white-space:nowrap}
   #galgrid{flex:1;overflow-y:auto;padding:16px;display:grid;gap:10px;
-           grid-template-columns:repeat(auto-fill,minmax(160px,1fr));align-content:start}
-  .g{position:relative;aspect-ratio:1;background:#000;cursor:pointer;overflow:hidden;border-radius:4px}
+           grid-template-columns:repeat(auto-fill,minmax(160px,1fr));align-content:start;-webkit-overflow-scrolling:touch}
+  .g{position:relative;aspect-ratio:1;background:#000;cursor:pointer;overflow:hidden;border-radius:4px;
+     animation:pop .5s both}
+  @keyframes pop{from{opacity:0;transform:translateY(10px) scale(.96)}to{opacity:1;transform:none}}
   .g img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .25s,opacity .2s}
   .g:hover img{transform:scale(1.04)}
   .g .tick{position:absolute;right:8px;top:8px;width:26px;height:26px;border-radius:50%;border:2px solid #fff;
@@ -109,7 +124,7 @@
 
   /* ---------- lightbox ---------- */
   #lb{z-index:50;background:#000000f2;flex-direction:column}
-  #lbimg{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:12px}
+  #lbimg{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:12px;touch-action:pan-y}
   #lbimg img{max-width:100%;max-height:100%;object-fit:contain;box-shadow:0 10px 60px #000}
   #lbbar{display:flex;gap:10px;padding:12px 16px;align-items:center;justify-content:center;flex-wrap:wrap;
          padding-bottom:max(12px,env(safe-area-inset-bottom))}
@@ -131,18 +146,22 @@
 
 <div id="drift"></div>
 <div id="reel"><div id="strip"><div id="track"></div></div></div>
+<div id="fade"></div>
+<canvas id="confetti"></canvas>
 
 <div id="hero">
   <h1>Susie <span>&amp;</span> Dima</h1>
-  <p>Thank you for celebrating with us</p>
+  <p id="sub">Thank you for celebrating with us</p>
+  <p id="greet"></p>
   <button id="cta">Show my photos</button>
+  <p id="hint"></p>
 </div>
 
 <div id="keybox" class="overlay">
   <form id="keyform">
     <h2>Your photos</h2>
-    <p>Enter the code from your personal link</p>
-    <input id="keyin" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="12" placeholder="········">
+    <p>Type the name from your personal link<br>e.g. <em>arthur-and-naz</em></p>
+    <input id="keyin" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="40" placeholder="your-name">
     <div id="keyerr"></div>
     <div class="row">
       <button type="button" class="btn" id="keycancel">Back</button>
@@ -183,33 +202,39 @@
 <script>
 const $ = s => document.querySelector(s);
 const mb = b => (b / 1e6).toFixed(b < 20e6 ? 1 : 0) + ' MB';
-let FILES = '', showcase = [], guest = null, key = '';
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const isMobile = () => matchMedia('(max-width:767px), (pointer:coarse) and (max-width:1024px)').matches;
+
+let FILES = '', showcase = [], guest = null, key = '', lbIndex = 0, revealed = false;
 const sel = new Set();
-let lbIndex = 0;
-const CLIENT_ZIP_MAX = 400e6;      // browsers hold the zip in memory; above this, ask for batches
-const AMBIENT_TOTAL = 20, AMBIENT_GUEST_MAX = 10;   // landing shows <=10 of the guest's own, ours fill to 20
+const AMBIENT_TOTAL = 20, AMBIENT_GUEST_MAX = 10, CLIENT_ZIP_MAX = 400e6;
 
 (async function init(){
   const [cfg, sc] = await Promise.all([fetch('config.json').then(r => r.json()),
                                        fetch('showcase.json').then(r => r.json())]);
-  FILES = cfg.files.replace(/\/$/, ''); showcase = sc;
-  ambient(); wire();
+  FILES = (new URLSearchParams(location.search).get('files') || cfg.files || '').replace(/\/$/, '');
+  showcase = sc;
+  ambient(); wire(); requestAnimationFrame(tick);
   const fromHash = decodeURIComponent(location.hash.replace(/^#\/?(k=)?/, '')).trim().toLowerCase();
   const k = fromHash || (localStorage.getItem('key') || '');
-  if (k && FILES) loadGuest(k, !!fromHash);
+  if (k && FILES) loadGuest(k);
 })();
 
-/* ---------- guest data ---------- */
-async function loadGuest(k, openNow){
+/* ================= guest ================= */
+async function loadGuest(k){
   try {
     const r = await fetch(`${FILES}/g/${encodeURIComponent(k)}.json`, {cache: 'no-cache'});
     if (!r.ok) throw new Error(r.status);
     guest = await r.json(); key = k;
     localStorage.setItem('key', k);
-    history.replaceState(null, '', location.pathname);        // keep the code out of the address bar
-    $('#cta').innerHTML = `Show my photos · <b>${esc(guest.name)}</b>`;
+    history.replaceState(null, '', location.pathname);
+    $('#greet').innerHTML = `Hi <b>${esc(guest.name)}</b> — we found you in ${guest.count} photo${guest.count === 1 ? '' : 's'}`;
+    $('#greet').classList.add('on');
+    $('#sub').textContent = 'Thank you for celebrating with us';
+    $('#cta').textContent = 'See my photos';
+    $('#hint').textContent = isMobile() ? 'Tap to roll the film' : 'Drag a photo to throw it';
     renderGallery(); ambient();
-    if (openNow) openGallery();
     return true;
   } catch (e) {
     if (localStorage.getItem('key') === k) localStorage.removeItem('key');
@@ -217,7 +242,8 @@ async function loadGuest(k, openNow){
   }
 }
 
-/* ---------- mobile reel ---------- */
+/* ================= ambient photo mix ================= */
+const url = (kind, p) => `${FILES}/${kind}/${p.id}.${kind === 'o' ? p.ext : 'jpg'}`;
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
 function ambientList(){
   // pinned showcase photos always appear; up to 10 of the guest's own; other showcase photos fill to 20
@@ -228,28 +254,43 @@ function ambientList(){
 }
 function ambient(){ const list = ambientList(); buildReel(list); buildDrift(list); }
 
+/* ================= mobile film reel (JS-driven so it can spin up) ================= */
+const reel = { y: 0, speed: 0, base: 40, spin: null, hold: false, n: 0 };
 function buildReel(list){
   const t = $('#track');
   const frames = list.map(p => `<div class="frame"><img src="${p.f}" alt="" loading="lazy"></div>`).join('');
-  t.innerHTML = frames + frames;
-  t.style.setProperty('--dur', (list.length * 7) + 's');
-  if (buildReel.wired) return; buildReel.wired = true;
-  const reel = $('#reel'); let hold;
-  reel.addEventListener('touchstart', () => { reel.classList.add('paused'); clearTimeout(hold); }, {passive:true});
-  reel.addEventListener('touchend', () => { hold = setTimeout(() => reel.classList.remove('paused'), 1200); });
+  t.innerHTML = frames + frames;                            // doubled: seamless loop over the first half
+  reel.n = list.length; reel.y = 0;
 }
+function reelTick(dt){
+  const t = $('#track'), half = t.offsetHeight / 2;
+  if (!half) return;
+  reel.base = half / (reel.n * 7);                          // ~7 s per photo at rest
+  let target = reel.hold ? 0 : reel.base;
+  if (reel.spin){
+    const p = clamp((performance.now() - reel.spin.t0) / reel.spin.dur, 0, 1);
+    target = reel.base * (1 + 70 * p * p * p);              // ease-in: lazy start, screaming finish
+    t.style.filter = `blur(${Math.min(5, p * p * 6).toFixed(2)}px)`;
+    if (p >= 1){ reel.spin = null; reel.spin_done && reel.spin_done(); }
+  } else if (t.style.filter) t.style.filter = '';
+  reel.speed += (target - reel.speed) * Math.min(1, dt * (reel.spin ? 12 : 4));
+  reel.y = (reel.y + reel.speed * dt) % half;
+  t.style.transform = `translateY(${-reel.y}px)`;
+}
+function spinReel(dur, done){ reel.spin = {t0: performance.now(), dur}; reel.spin_done = done; }
 
-/* ---------- desktop drift ---------- */
-let cards = [];
+/* ================= desktop drifting polaroids (drag to throw) ================= */
+const cards = [];
+let gather = null;
 function buildDrift(list){
-  const wrap = $('#drift'), W = innerWidth, H = innerHeight, n = list.length;
-  wrap.innerHTML = ''; cards = [];
-  const base = Math.min(270, W / Math.max(5.6, Math.sqrt(n) * 1.9));   // more photos -> smaller cards
+  const wrap = $('#drift'); wrap.innerHTML = ''; cards.length = 0;
+  const W = innerWidth, H = innerHeight, n = list.length;
+  const base = Math.min(270, W / Math.max(5.6, Math.sqrt(n) * 1.9));
   list.forEach((p, i) => {
     const el = document.createElement('div'); el.className = 'card';
     const w = p.w >= p.h ? base * 1.15 : base * 0.82;
     el.style.width = w + 'px';
-    el.innerHTML = `<img src="${p.f}" alt="">`;
+    el.innerHTML = `<img src="${p.f}" alt="" draggable="false">`;
     wrap.appendChild(el);
     const h = w * (p.h / p.w) + 51;
     const c = { el, w, h,
@@ -257,53 +298,126 @@ function buildDrift(list){
       y: (Math.floor(i / 2) / Math.ceil(n / 2)) * (H - h * .6) + Math.random() * 40 - 20,
       vx: (Math.random() < .5 ? -1 : 1) * (8 + Math.random() * 10),
       vy: (Math.random() < .5 ? -1 : 1) * (5 + Math.random() * 8),
-      rot: -9 + Math.random() * 18, rotv: (Math.random() - .5) * 1.2, hover: false, lift: 0 };
-    el.addEventListener('mouseenter', () => { c.hover = true; el.style.zIndex = 30; });
-    el.addEventListener('mouseleave', () => { c.hover = false; el.style.zIndex = ''; });
-    el.addEventListener('click', ctaClick);
+      rot: -9 + Math.random() * 18, rotv: (Math.random() - .5) * 1.2, hover: false, lift: 0, drag: null, flung: false };
+    el.addEventListener('mouseenter', () => { if (!c.drag) c.hover = true; el.style.zIndex = 30; });
+    el.addEventListener('mouseleave', () => { if (!c.drag){ c.hover = false; el.style.zIndex = ''; } });
+    el.addEventListener('pointerdown', e => {
+      e.preventDefault(); el.setPointerCapture(e.pointerId); el.classList.add('drag');
+      c.drag = {ox: e.clientX - c.x, oy: e.clientY - c.y, sx: e.clientX, sy: e.clientY, lx: e.clientX, ly: e.clientY,
+                lt: performance.now(), vx: 0, vy: 0};
+      c.hover = true; el.style.zIndex = 31;
+    });
+    el.addEventListener('pointermove', e => {
+      const d = c.drag; if (!d) return;
+      const now = performance.now(), dt = Math.max(1, now - d.lt) / 1000;
+      d.vx = d.vx * .5 + ((e.clientX - d.lx) / dt) * .5; d.vy = d.vy * .5 + ((e.clientY - d.ly) / dt) * .5;
+      d.lx = e.clientX; d.ly = e.clientY; d.lt = now;
+      c.x = e.clientX - d.ox; c.y = e.clientY - d.oy;
+    });
+    const release = e => {
+      const d = c.drag; if (!d) return;
+      c.drag = null; el.classList.remove('drag'); c.hover = false; el.style.zIndex = '';
+      const moved = Math.hypot(e.clientX - d.sx, e.clientY - d.sy);
+      if (moved < 6) return ctaClick();                                   // it was a click
+      c.vx = clamp(d.vx, -1600, 1600); c.vy = clamp(d.vy, -1600, 1600);
+      c.rotv = clamp(c.vx / 40, -90, 90); c.flung = true;
+    };
+    el.addEventListener('pointerup', release); el.addEventListener('pointercancel', release);
     cards.push(c);
   });
-  if (buildDrift.running) return; buildDrift.running = true;
-  let last = performance.now();
-  (function tick(now){
-    const dt = Math.min(.05, (now - last) / 1000); last = now;
-    const W = innerWidth, H = innerHeight;
-    for (const c of cards){
-      if (!c.hover){
-        c.x += c.vx * dt; c.y += c.vy * dt; c.rot += c.rotv * dt;
-        if (c.x < -c.w * .35) c.vx = Math.abs(c.vx);
-        if (c.x > W - c.w * .65) c.vx = -Math.abs(c.vx);
-        if (c.y < -c.h * .35) c.vy = Math.abs(c.vy);
-        if (c.y > H - c.h * .65) c.vy = -Math.abs(c.vy);
-        if (Math.abs(c.rot) > 12) c.rotv = -c.rotv;
-      }
-      c.lift += ((c.hover ? 1 : 0) - c.lift) * Math.min(1, dt * 8);
-      c.el.style.transform = `translate(${c.x}px,${c.y}px) rotate(${c.rot * (1 - c.lift)}deg) scale(${1 + c.lift * .08})`;
+}
+function driftTick(dt){
+  const W = innerWidth, H = innerHeight;
+  for (const c of cards){
+    if (gather){
+      const p = clamp((performance.now() - gather.t0) / gather.dur, 0, 1), e = p * p * (3 - 2 * p);
+      if (!c.g0) c.g0 = {x: c.x, y: c.y, r: c.rot};
+      c.x = c.g0.x + (W / 2 - c.w / 2 - c.g0.x) * e; c.y = c.g0.y + (H / 2 - c.h / 2 - c.g0.y) * e;
+      c.rot = c.g0.r * (1 - e) + e * 720 * (cards.indexOf(c) % 2 ? 1 : -1) * p * p;
+      c.el.style.opacity = 1 - p * p;
+      c.el.style.transform = `translate(${c.x}px,${c.y}px) rotate(${c.rot}deg) scale(${1 - .7 * e})`;
+      continue;
     }
-    requestAnimationFrame(tick);
-  })(last);
+    if (!c.hover && !c.drag){
+      c.x += c.vx * dt; c.y += c.vy * dt; c.rot += c.rotv * dt;
+      if (c.x < -c.w * .35) c.vx = Math.abs(c.vx);
+      if (c.x > W - c.w * .65) c.vx = -Math.abs(c.vx);
+      if (c.y < -c.h * .35) c.vy = Math.abs(c.vy);
+      if (c.y > H - c.h * .65) c.vy = -Math.abs(c.vy);
+      if (c.flung){                                                         // friction back down to a drift
+        const f = Math.pow(.15, dt); c.vx *= f; c.vy *= f; c.rotv *= f;
+        if (Math.hypot(c.vx, c.vy) < 25){ c.flung = false; c.rotv = (Math.random() - .5) * 1.2; }
+      } else if (Math.abs(c.rot) > 12) c.rotv = -c.rotv;
+    }
+    c.lift += ((c.hover || c.drag ? 1 : 0) - c.lift) * Math.min(1, dt * 8);
+    c.el.style.transform = `translate(${c.x}px,${c.y}px) rotate(${c.rot * (1 - c.lift)}deg) scale(${1 + c.lift * .08})`;
+  }
+  if (gather && performance.now() - gather.t0 >= gather.dur){ const d = gather.done; gather = null; d && d(); }
+}
+function gatherCards(dur, done){ gather = {t0: performance.now(), dur, done}; }
+
+/* ================= shared animation loop ================= */
+let last = performance.now();
+function tick(now){
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  isMobile() ? reelTick(dt) : driftTick(dt);
+  requestAnimationFrame(tick);
 }
 
-/* ---------- key prompt ---------- */
+/* ================= the reveal ================= */
 function ctaClick(){
   if (!FILES) return toast("Photo downloads open very soon — we'll send you your personal link");
-  guest ? openGallery() : openKeybox();
+  if (!guest) return openKeybox();
+  reveal();
 }
+function reveal(){
+  const hero = $('#hero'); hero.classList.add('gone');
+  const first = !revealed;
+  const finish = () => {
+    $('#fade').classList.add('on');
+    setTimeout(() => { showGallery(); $('#fade').classList.remove('on'); if (first) confetti(); }, 220);
+  };
+  if (isMobile()) spinReel(first ? 3600 : 1400, finish);
+  else gatherCards(first ? 1500 : 900, () => { finish(); setTimeout(() => buildDrift(ambientList()), 600); });
+}
+function showGallery(){ revealed = true; $('#gal').classList.add('open'); }
+function closeGallery(){ $('#gal').classList.remove('open'); $('#hero').classList.remove('gone'); }
+
+/* ================= confetti (tiny, self-contained) ================= */
+function confetti(){
+  const cv = $('#confetti'), ctx = cv.getContext('2d');
+  cv.width = innerWidth * devicePixelRatio; cv.height = innerHeight * devicePixelRatio; ctx.scale(devicePixelRatio, devicePixelRatio);
+  const cols = ['#d9b56c', '#fbf9f4', '#ff8b5a', '#c9a2ff', '#8fd3c8'], W = innerWidth, H = innerHeight;
+  const ps = Array.from({length: 140}, () => ({ x: W / 2 + (Math.random() - .5) * W * .3, y: H * .45,
+    vx: (Math.random() - .5) * 900, vy: -300 - Math.random() * 700, r: 3 + Math.random() * 5,
+    a: Math.random() * 6.3, av: (Math.random() - .5) * 12, c: cols[Math.random() * cols.length | 0] }));
+  const t0 = performance.now();
+  (function frame(now){
+    const t = (now - t0) / 1000; if (t > 2.2){ ctx.clearRect(0, 0, W, H); return; }
+    ctx.clearRect(0, 0, W, H);
+    for (const p of ps){
+      p.vy += 1400 * (1 / 60); p.vx *= .985; p.x += p.vx / 60; p.y += p.vy / 60; p.a += p.av / 60;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a); ctx.globalAlpha = clamp(2.2 - t, 0, 1);
+      ctx.fillStyle = p.c; ctx.fillRect(-p.r, -p.r * .6, p.r * 2, p.r * 1.2); ctx.restore();
+    }
+    requestAnimationFrame(frame);
+  })(t0);
+}
+
+/* ================= key prompt ================= */
 function openKeybox(){ $('#keyerr').textContent = ''; $('#keybox').classList.add('open'); setTimeout(() => $('#keyin').focus(), 50); }
 
-/* ---------- gallery ---------- */
-const url = (kind, p) => `${FILES}/${kind}/${p.id}.${kind === 'o' ? p.ext : 'jpg'}`;
+/* ================= gallery ================= */
 function renderGallery(){
   $('#galtitle').innerHTML = `Hi <b>${esc(guest.name)}</b> — your photos`;
   $('#galn').textContent = `${guest.count} photos · ${mb(guest.bytes)}`;
   $('#galgrid').innerHTML = guest.photos.map((p, i) =>
-    `<div class="g" data-i="${i}"><img src="${url('t', p)}" alt="" loading="lazy"><span class="tick">✓</span></div>`).join('');
+    `<div class="g" data-i="${i}" style="animation-delay:${Math.min(i, 30) * 25}ms"><img src="${url('t', p)}" alt="" loading="lazy"><span class="tick">✓</span></div>`).join('');
   $('#dlall').textContent = guest.zip ? `Download all (${mb(guest.bytes)})` : 'Download all';
-  $('#galhint').textContent = guest.zip ? '' :
+  $('#galhint').textContent = guest.zip ? 'Tap a photo to view it full size' :
     `Your set is ${mb(guest.bytes)} — too big for one file. Select a batch at a time, or download singles.`;
   sel.clear(); updateSel();
 }
-function openGallery(){ $('#gal').classList.add('open'); }
 function updateSel(){
   document.querySelectorAll('.g').forEach(g => g.classList.toggle('sel', sel.has(+g.dataset.i)));
   const bytes = [...sel].reduce((s, i) => s + guest.photos[i].bytes, 0);
@@ -313,7 +427,7 @@ function updateSel(){
   $('#lbsel').classList.toggle('on', sel.has(lbIndex));
 }
 
-/* ---------- lightbox ---------- */
+/* ================= lightbox ================= */
 function openLb(i){
   lbIndex = i; const p = guest.photos[i];
   $('#lbpic').src = url('p', p);
@@ -323,7 +437,7 @@ function openLb(i){
   for (const j of [i + 1, i - 1]) if (guest.photos[j]) new Image().src = url('p', guest.photos[j]);
 }
 
-/* ---------- downloads ---------- */
+/* ================= downloads ================= */
 async function zipDownload(indexes, label){
   const items = indexes.map(i => guest.photos[i]);
   const total = items.reduce((s, p) => s + p.bytes, 0);
@@ -345,22 +459,26 @@ async function zipDownload(indexes, label){
   } finally { btn.disabled = false; btn.textContent = was; }
 }
 
-/* ---------- wiring ---------- */
+/* ================= wiring ================= */
 function wire(){
   $('#cta').addEventListener('click', ctaClick);
+  $('#reel').addEventListener('touchstart', () => { if (!reel.spin) reel.hold = true; }, {passive: true});
+  $('#reel').addEventListener('touchend', () => setTimeout(() => reel.hold = false, 900));
   $('#keycancel').addEventListener('click', () => $('#keybox').classList.remove('open'));
   $('#keyform').addEventListener('submit', async e => {
     e.preventDefault();
-    const k = $('#keyin').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    const k = $('#keyin').value.trim().toLowerCase().replace(/\s+/g, '-').replace(/&/g, 'and').replace(/[^a-z0-9-]/g, '');
     if (!k) return;
     $('#keyerr').textContent = 'Checking…';
-    if (await loadGuest(k, false)){ $('#keybox').classList.remove('open'); openGallery(); }
-    else $('#keyerr').textContent = "That code isn't recognised — check the link we sent you";
+    if (await loadGuest(k)){ $('#keybox').classList.remove('open'); setTimeout(reveal, 300); }
+    else $('#keyerr').textContent = "That name isn't recognised — check the link we sent you";
   });
-  $('#galclose').addEventListener('click', () => $('#gal').classList.remove('open'));
+  $('#galclose').addEventListener('click', closeGallery);
   $('#selmode').addEventListener('click', () => {
     const on = $('#gal').classList.toggle('selecting');
     $('#selmode').classList.toggle('on', on); $('#selmode').textContent = on ? 'Done' : 'Select';
+    $('#galhint').textContent = on ? 'Tap photos to pick them, then download the selection' :
+      (guest.zip ? 'Tap a photo to view it full size' : $('#galhint').textContent);
   });
   $('#galgrid').addEventListener('click', e => {
     const g = e.target.closest('.g'); if (!g) return;
@@ -370,7 +488,7 @@ function wire(){
   });
   $('#dlsel').addEventListener('click', () => zipDownload([...sel].sort((a, b) => a - b), 'selection'));
   $('#dlall').addEventListener('click', () => {
-    if (guest.zip){ const a = document.createElement('a'); a.href = `${FILES}/g/${key}.zip`; a.download = ''; a.click(); }
+    if (guest.zip){ const a = document.createElement('a'); a.href = `${FILES}/g/${key}.zip`; a.download = ''; a.click(); toast('Your zip is on its way'); }
     else zipDownload(guest.photos.map((_, i) => i), 'all');
   });
   $('#lbclose').addEventListener('click', () => $('#lb').classList.remove('open'));
@@ -378,20 +496,21 @@ function wire(){
   $('#next').addEventListener('click', () => openLb((lbIndex + 1) % guest.count));
   $('#lbsel').addEventListener('click', () => { sel.has(lbIndex) ? sel.delete(lbIndex) : sel.add(lbIndex); updateSel(); });
   addEventListener('keydown', e => {
-    if (!$('#lb').classList.contains('open')) return;
-    if (e.key === 'ArrowRight') $('#next').click();
-    if (e.key === 'ArrowLeft') $('#prev').click();
-    if (e.key === 'Escape') $('#lb').classList.remove('open');
+    if ($('#lb').classList.contains('open')){
+      if (e.key === 'ArrowRight') $('#next').click();
+      if (e.key === 'ArrowLeft') $('#prev').click();
+      if (e.key === 'Escape') $('#lb').classList.remove('open');
+    } else if (e.key === 'Escape' && $('#gal').classList.contains('open')) closeGallery();
   });
   let sx = 0;
-  $('#lbimg').addEventListener('touchstart', e => sx = e.touches[0].clientX, {passive:true});
+  $('#lbimg').addEventListener('touchstart', e => sx = e.touches[0].clientX, {passive: true});
   $('#lbimg').addEventListener('touchend', e => {
     const dx = e.changedTouches[0].clientX - sx;
     if (Math.abs(dx) > 50) (dx < 0 ? $('#next') : $('#prev')).click();
   });
+  addEventListener('resize', () => { if (!isMobile() && !gather) buildDrift(ambientList()); });
 }
 
-const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function toast(m){
   const t = $('#toast'); t.textContent = m; t.classList.add('show');
   clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 3500);
