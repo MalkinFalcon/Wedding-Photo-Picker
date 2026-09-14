@@ -145,6 +145,8 @@
   #galfoot #selrow{padding:8px 12px;border-radius:12px;background:#ffffff0a;border:1px solid #ffffff12}
   #galfoot #selrow:not(.on){display:none}
   #stripBtn:not(.ok){display:none}
+  .shareonly{display:none} body.canshare .shareonly{display:inline-flex;align-items:center;justify-content:center}
+  body.canshare .zipbtn{display:none}
   #gal.selecting .g{cursor:copy}
   #gal.selecting #vpic::after{content:"Tap photos below to select them";position:absolute;left:50%;top:10px;transform:translateX(-50%);
     padding:6px 12px;border-radius:999px;background:#0009;color:#fff;font-size:11.5px;letter-spacing:.04em;white-space:nowrap}
@@ -272,13 +274,15 @@
     <div class="row" id="selrow">
       <span id="selinfo"></span>
       <button class="btn" id="stripBtn">Booth strip</button>
-      <button class="btn primary" id="dlsel">Download</button>
+      <button class="btn primary shareonly" id="selPhotos" data-label="">Save to Photos</button>
+      <button class="btn primary zipbtn" id="dlsel">Download</button>
       <button class="btn" id="selclear">Clear</button>
     </div>
     <div class="row">
       <span class="hint" id="galhint"></span>
       <a class="lnk" id="dlorig" download>All originals</a>
-      <button class="btn primary" id="dlall">Download all</button>
+      <button class="btn primary shareonly" id="allPhotos" data-label="">Save all to Photos</button>
+      <button class="btn primary zipbtn" id="dlall">Download all</button>
     </div>
   </div>
 </div>
@@ -328,6 +332,7 @@ const AMBIENT_TOTAL = 20, AMBIENT_GUEST_MAX = 10, CLIENT_ZIP_MAX = 400e6;
   FILES = (new URLSearchParams(location.search).get('files') || cfg.files || FILES_FALLBACK).replace(/\/$/, '');
   GUESTBOOK = (new URLSearchParams(location.search).get('guestbook') || cfg.guestbook || '').replace(/\/$/, '');
   ambient(); wire(); requestAnimationFrame(tick);
+  try { if (isMobile() && navigator.canShare && navigator.canShare({files: [new File(['x'], 'x.jpg', {type: 'image/jpeg'})]})) document.body.classList.add('canshare'); } catch (e) {}
   const fromHash = decodeURIComponent(location.hash.replace(/^#\/?(k=)?/, '')).trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
   pendingKey = fromHash || store.get('key') || '';
   if (pendingKey) loadGuest(pendingKey);
@@ -581,9 +586,13 @@ function renderGallery(){
     `<div class="g" data-i="${i}"><img src="${url('t', p)}" alt="" loading="lazy"><span class="tick">✓</span></div>`).join('');
   const web = guest.wbytes != null;
   $('#dlall').textContent = `Download all (${mb(web ? guest.wbytes : guest.bytes)})`;
+  const ap = $('#allPhotos'); ap.dataset.label = `Save all ${guest.count} to Photos`; ap.textContent = ap.dataset.label; ap.disabled = false; batchQ.all = null;
   const dlo = $('#dlorig'); dlo.style.display = (web && guest.zip) ? '' : 'none';
   dlo.textContent = `All originals (${mb(guest.bytes)})`; dlo.href = `${FILES}/g/${key}.zip`;
-  $('#galhint').textContent = 'Select photos to download a few, or make a booth strip';
+  $('#galhint').innerHTML = document.body.classList.contains('canshare')
+    ? `Select photos to save a few, or make a booth strip · <button class="lnk" id="dlallz">or zip · ${mb(web ? guest.wbytes : guest.bytes)}</button>`
+    : 'Select photos to download a few, or make a booth strip';
+  const az = $('#dlallz'); if (az) az.addEventListener('click', () => $('#dlall').click());
   sel.clear(); show(0, true); updateSel();
 }
 function show(i, instant){
@@ -598,6 +607,7 @@ function show(i, instant){
   $('#vorig').href = url('o', p); $('#vorig').setAttribute('download', p.name);
   $('#vorig').textContent = `original · ${mb(p.bytes)}`; $('#vorig').style.display = big ? '' : 'none';
   $('#vn').textContent = `${cur + 1} / ${guest.count}${big ? '' : ' · ' + mb(p.bytes)}`;
+  if (document.body.classList.contains('canshare') && big) prefetchFile(p);
   document.querySelectorAll('.g').forEach(g => g.classList.toggle('cur', +g.dataset.i === cur));
   const g = document.querySelectorAll('.g')[cur]; if (g) g.scrollIntoView({block: 'nearest', behavior: 'smooth'});
   for (const j of [cur + 1, cur - 1]) if (guest.photos[(j + guest.count) % guest.count]) new Image().src = url('p', guest.photos[(j + guest.count) % guest.count]);
@@ -609,11 +619,14 @@ function updateSel(){
   $('#selrow').classList.toggle('on', sel.size > 0);
   const lbytes = [...sel].reduce((s, i) => s + (guest.photos[i].lb || guest.photos[i].bytes), 0);
   $('#dlsel').textContent = `Download ${sel.size} (${mb(lbytes)})`;
+  const sp = $('#selPhotos'); if (!batchQ.sel){ sp.dataset.label = `Save ${sel.size} to Photos`; sp.textContent = sp.dataset.label; }
   const sb = $('#stripBtn'), ok = sel.size >= 2 && sel.size <= 4; sb.classList.toggle('ok', ok); sb.disabled = !ok;
   sb.textContent = `Booth strip (${sel.size})`;
   const origLink = guest.photos.some(p => p.lb != null) ? `<button class="lnk" id="dlselo">originals · ${mb(bytes)}</button>` : '';
-  $('#selinfo').innerHTML = `<b>${sel.size} selected</b>${origLink}`;
+  const zipLink = document.body.classList.contains('canshare') ? `<button class="lnk" id="dlselz">zip · ${mb(lbytes)}</button>` : '';
+  $('#selinfo').innerHTML = `<b>${sel.size} selected</b>${zipLink}${origLink}`;
   const so = $('#dlselo'); if (so) so.addEventListener('click', () => zipDownload([...sel].sort((a, b) => a - b), 'originals', 'o'));
+  const sz = $('#dlselz'); if (sz) sz.addEventListener('click', () => zipDownload([...sel].sort((a, b) => a - b), 'selection'));
   const on = $('#gal').classList.contains('selecting');
   $('#vsel').textContent = on ? 'Done' : 'Select'; $('#vsel').classList.toggle('on', on);
   $('#selmode').textContent = on ? 'Done' : 'Select'; $('#selmode').classList.toggle('on', on);
@@ -729,6 +742,44 @@ function slideStep(){
   new Image().src = url('p', guest.photos[(show_.i + 1) % guest.count]);
 }
 
+/* ================= save to Photos (share sheet with files) ================= */
+const fileCache = new Map();                       // oid -> File (large tier), for one-tap single saves
+async function fetchFile(p){
+  if (fileCache.has(p.id)) return fileCache.get(p.id);
+  const r = await fetch(url('l', p), {signal: AbortSignal.timeout ? AbortSignal.timeout(45000) : undefined}); if (!r.ok) throw new Error('photo ' + r.status);
+  const f = new File([await r.blob()], lname(p), {type: 'image/jpeg'});
+  if (fileCache.size > 40) fileCache.delete(fileCache.keys().next().value);
+  fileCache.set(p.id, f); return f;
+}
+function prefetchFile(p){ fetchFile(p).catch(() => {}); }
+async function shareFiles(files){
+  try { await navigator.share({files, title: 'Susie & Dima'}); return true; }
+  catch (e) { if (e.name !== 'AbortError') toast('Could not open the share sheet: ' + (e.message || e)); return false; }
+}
+const batchQ = { all: null, sel: null };            // pending batches per button
+async function saveToPhotos(which, indexes, btn){
+  const q = batchQ[which];
+  if (q){                                           // a batch is ready: share it inside this tap
+    if (await shareFiles(q.batches[q.i])) q.i++;
+    if (q.i >= q.batches.length){ batchQ[which] = null; btn.textContent = btn.dataset.label; toast('All saved ❤'); confetti(); }
+    else btn.textContent = `Save batch ${q.i + 1} of ${q.batches.length}`;
+    return;
+  }
+  const items = indexes.map(i => guest.photos[i]), total = items.reduce((s, p) => s + p.lb, 0);
+  btn.disabled = true; let done = 0;
+  try {
+    const files = [];
+    for (const p of items){ files.push(await fetchFile(p)); done += p.lb; btn.textContent = `Getting photos… ${Math.round(done / total * 100)}%`; }
+    const batches = []; let b = [], size = 0;
+    for (const f of files){ if (b.length >= 20 || size + f.size > 60e6){ batches.push(b); b = []; size = 0; } b.push(f); size += f.size; }
+    if (b.length) batches.push(b);
+    batchQ[which] = {batches, i: 0};
+    btn.textContent = batches.length > 1 ? `Save batch 1 of ${batches.length}` : 'Tap to save';
+    toast(batches.length > 1 ? `Ready — ${batches.length} batches, tap Save each time` : 'Ready — tap again, then choose Save Images');
+  } catch (e) { toast('Could not fetch the photos: ' + (e.message || e)); btn.textContent = btn.dataset.label; }
+  finally { btn.disabled = false; }
+}
+
 /* ================= wiring ================= */
 function wire(){
   wireReel();
@@ -745,6 +796,15 @@ function wire(){
   $('#galclose').addEventListener('click', closeGallery);
   $('#vclose').addEventListener('click', closeGallery);
   $('#play').addEventListener('click', () => slideshow(true));
+  $('#allPhotos').addEventListener('click', e => saveToPhotos('all', guest.photos.map((_, i) => i), e.currentTarget));
+  $('#selPhotos').addEventListener('click', e => saveToPhotos('sel', [...sel].sort((a, b) => a - b), e.currentTarget));
+  $('#selclear').addEventListener('click', () => { batchQ.sel = null; });
+  $('#vdl').addEventListener('click', e => {                     // single photo: share sheet when the phone can, else the link
+    if (!document.body.classList.contains('canshare')) return;
+    const p = guest.photos[cur], f = fileCache.get(p.id);
+    if (f){ e.preventDefault(); shareFiles([f]); }
+    else toast('Saving to Files — use the share sheet next time');
+  });
   $('#show').addEventListener('click', () => { show(show_.i); slideshow(false); });
   $('#selclear').addEventListener('click', () => { sel.clear(); updateSel(); });
   let lp = null;                                                        // long-press a thumbnail to (de)select it
