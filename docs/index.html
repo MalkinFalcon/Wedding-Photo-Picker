@@ -187,12 +187,13 @@ let FILES = '', showcase = [], guest = null, key = '';
 const sel = new Set();
 let lbIndex = 0;
 const CLIENT_ZIP_MAX = 400e6;      // browsers hold the zip in memory; above this, ask for batches
+const AMBIENT_TOTAL = 20, AMBIENT_GUEST_MAX = 10;   // landing shows <=10 of the guest's own, ours fill to 20
 
 (async function init(){
   const [cfg, sc] = await Promise.all([fetch('config.json').then(r => r.json()),
                                        fetch('showcase.json').then(r => r.json())]);
   FILES = cfg.files.replace(/\/$/, ''); showcase = sc;
-  buildReel(); buildDrift(); wire();
+  ambient(); wire();
   const fromHash = decodeURIComponent(location.hash.replace(/^#\/?(k=)?/, '')).trim().toLowerCase();
   const k = fromHash || (localStorage.getItem('key') || '');
   if (k && FILES) loadGuest(k, !!fromHash);
@@ -207,7 +208,7 @@ async function loadGuest(k, openNow){
     localStorage.setItem('key', k);
     history.replaceState(null, '', location.pathname);        // keep the code out of the address bar
     $('#cta').innerHTML = `Show my photos · <b>${esc(guest.name)}</b>`;
-    renderGallery();
+    renderGallery(); ambient();
     if (openNow) openGallery();
     return true;
   } catch (e) {
@@ -217,22 +218,32 @@ async function loadGuest(k, openNow){
 }
 
 /* ---------- mobile reel ---------- */
-function buildReel(){
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+function ambientList(){
+  const mine = guest ? shuffle(guest.photos).slice(0, AMBIENT_GUEST_MAX).map(p => ({f: url('p', p), w: p.w, h: p.h})) : [];
+  const ours = shuffle(showcase).slice(0, Math.max(AMBIENT_TOTAL - AMBIENT_GUEST_MAX, AMBIENT_TOTAL - mine.length));
+  return shuffle([...mine, ...ours]);
+}
+function ambient(){ const list = ambientList(); buildReel(list); buildDrift(list); }
+
+function buildReel(list){
   const t = $('#track');
-  const frames = showcase.map(p => `<div class="frame"><img src="${p.f}" alt="" loading="lazy"></div>`).join('');
+  const frames = list.map(p => `<div class="frame"><img src="${p.f}" alt="" loading="lazy"></div>`).join('');
   t.innerHTML = frames + frames;
-  t.style.setProperty('--dur', (showcase.length * 7) + 's');
+  t.style.setProperty('--dur', (list.length * 7) + 's');
+  if (buildReel.wired) return; buildReel.wired = true;
   const reel = $('#reel'); let hold;
   reel.addEventListener('touchstart', () => { reel.classList.add('paused'); clearTimeout(hold); }, {passive:true});
   reel.addEventListener('touchend', () => { hold = setTimeout(() => reel.classList.remove('paused'), 1200); });
 }
 
 /* ---------- desktop drift ---------- */
-const cards = [];
-function buildDrift(){
-  const wrap = $('#drift'), W = innerWidth, H = innerHeight, n = showcase.length;
+let cards = [];
+function buildDrift(list){
+  const wrap = $('#drift'), W = innerWidth, H = innerHeight, n = list.length;
+  wrap.innerHTML = ''; cards = [];
   const base = Math.min(270, W / Math.max(5.6, Math.sqrt(n) * 1.9));   // more photos -> smaller cards
-  showcase.forEach((p, i) => {
+  list.forEach((p, i) => {
     const el = document.createElement('div'); el.className = 'card';
     const w = p.w >= p.h ? base * 1.15 : base * 0.82;
     el.style.width = w + 'px';
@@ -250,6 +261,7 @@ function buildDrift(){
     el.addEventListener('click', ctaClick);
     cards.push(c);
   });
+  if (buildDrift.running) return; buildDrift.running = true;
   let last = performance.now();
   (function tick(now){
     const dt = Math.min(.05, (now - last) / 1000); last = now;
