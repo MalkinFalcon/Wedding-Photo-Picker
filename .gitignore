@@ -6,3 +6,5 @@ guests.csv
 _out/
 photo_ids.json
 *.tmp
+worker/.wrangler/
+worker/node_modules/
