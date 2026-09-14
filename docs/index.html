@@ -166,10 +166,12 @@
     #galgrid{width:auto;min-width:0;flex:1;min-height:0;border-left:0;border-top:1px solid #ffffff10;
              grid-template-columns:repeat(4,1fr);gap:3px;padding:4px}
     .g{border-radius:2px}
-    #galbar{display:none} #vclose{display:block}
+    #galbar{display:none} #vclose{display:block;top:9px;left:10px;right:auto;width:36px;height:36px}
+    #vbar{order:-1;padding:10px 12px 10px 54px;justify-content:flex-start;border-top:0;border-bottom:1px solid #ffffff10}
+    #vn{display:none}
     #galfoot{gap:8px;padding:10px 12px} .btn{padding:11px 13px;font-size:11px}
     #galfoot .row{justify-content:stretch} #galfoot .row .btn{flex:1;text-align:center}
-    #galfoot .hint{flex-basis:100%;text-align:center;min-width:0}
+    #galfoot .hint{flex-basis:100%;text-align:center;min-width:0;font-size:11.5px;line-height:1.35;padding:0 8px}
     #selrow{padding:8px 10px} #selinfo{flex-basis:100%;text-align:center}
     #viewer{height:50%}
   }
@@ -257,7 +259,7 @@
       <div id="vbar">
         <span class="n" id="vn"></span>
         <a class="btn primary" id="vdl" download>↓ Save</a>
-        <button class="btn" id="vsel">Select</button>
+        <button class="btn" id="vsel">Multiselect</button>
         <button class="btn" id="play" title="Slideshow">▶ Play</button>
       </div>
     </div>
@@ -587,7 +589,7 @@ function renderGallery(){
   const ap = $('#allPhotos'); ap.dataset.label = PLATFORM === 'android' ? `Save all ${guest.count} to phone` : `Save all ${guest.count} to Photos`; ap.textContent = ap.dataset.label; ap.disabled = false; batchQ.all = null;
   $('#galhint').innerHTML = document.body.classList.contains('canshare')
     ? `Select photos to save just a few · <button class="lnk" id="dlallz">or zip · ${mb(web ? guest.wbytes : guest.bytes)}</button>`
-    : (isMobile() ? 'Downloads arrive as one .zip — open it from your Files app to unpack the photos' : 'Select photos to download just a few');
+    : (isMobile() ? 'Photos arrive as one .zip — unpack it in your Files app or on a PC' : 'Select photos to download just a few');
   const az = $('#dlallz'); if (az) az.addEventListener('click', () => $('#dlall').click());
   sel.clear(); show(0, true); updateSel();
 }
@@ -620,7 +622,7 @@ function updateSel(){
   $('#selinfo').innerHTML = `<b>${sel.size} selected</b>${zipLink}${origLink}`;
   const sz = $('#dlselz'); if (sz) sz.addEventListener('click', () => zipDownload([...sel].sort((a, b) => a - b), 'selection'));
   const on = $('#gal').classList.contains('selecting');
-  $('#vsel').textContent = on ? 'Done' : 'Select'; $('#vsel').classList.toggle('on', on);
+  $('#vsel').textContent = on ? 'Done' : 'Multiselect'; $('#vsel').classList.toggle('on', on);
   $('#selmode').textContent = on ? 'Done' : 'Select'; $('#selmode').classList.toggle('on', on);
   $('#vsel').classList.toggle('on', sel.has(cur));
 }
