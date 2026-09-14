@@ -92,7 +92,8 @@
        text-decoration:none;display:inline-block}
   .btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
   .btn.on{background:var(--accent);color:#15120e;border-color:var(--accent)}
-  .btn.play{background:var(--accent);color:#15120e;border-color:var(--accent);font-weight:600;padding:12px 18px}
+  .btn.play{background:var(--accent);color:#15120e;border-color:var(--accent);font-weight:600}
+  .btn.off{background:#3a1d1d;color:#ffb3b3;border-color:#7a3535}
   .btn.play:hover{filter:brightness(1.08)}
   .btn:disabled{opacity:.35;cursor:default}
   .overlay{position:fixed;inset:0;z-index:40;background:#15120ef2;backdrop-filter:blur(14px);display:flex;
@@ -173,7 +174,6 @@
     #vn{display:none}
     #galfoot{gap:8px;padding:10px 12px} .btn{padding:11px 13px;font-size:11px}
     #galfoot .row{justify-content:stretch} #galfoot .row .btn{flex:1;text-align:center}
-    #galfoot .btn.play{width:100%;text-align:center;padding:11px 13px}
     #galfoot .hint{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     #galfoot .hint{flex-basis:100%;text-align:center;min-width:0;font-size:11.5px;line-height:1.35;padding:0 8px}
     #selrow{padding:8px 10px} #selinfo{flex-basis:100%;text-align:center}
@@ -262,6 +262,7 @@
       <div id="vpic"><img id="vimg" alt=""></div>
       <div id="vbar">
         <span class="n" id="vn"></span>
+        <button class="btn play" id="play">▶ Play</button>
         <a class="btn primary" id="vdl" download>↓ Save</a>
         <button class="btn" id="vsel">Multiselect</button>
       </div>
@@ -275,7 +276,6 @@
       <button class="btn primary zipbtn" id="dlsel">Download</button>
       <button class="btn" id="selclear">Clear</button>
     </div>
-    <button class="btn play" id="play">▶ Play slideshow</button>
     <div class="row">
       <span class="hint" id="galhint"></span>
       <button class="btn primary shareonly" id="allPhotos" data-label="">Save all to Photos</button>
@@ -626,8 +626,8 @@ function updateSel(){
   $('#selinfo').innerHTML = `<b>${sel.size} selected</b>${zipLink}${origLink}`;
   const sz = $('#dlselz'); if (sz) sz.addEventListener('click', () => zipDownload([...sel].sort((a, b) => a - b), 'selection'));
   const on = $('#gal').classList.contains('selecting');
-  $('#vsel').textContent = on ? 'Done' : 'Multiselect'; $('#vsel').classList.toggle('on', on);
-  $('#selmode').textContent = on ? 'Done' : 'Select'; $('#selmode').classList.toggle('on', on);
+  $('#vsel').textContent = on ? 'Multiselect off' : 'Multiselect'; $('#vsel').classList.toggle('off', on);
+  $('#selmode').textContent = on ? 'Multiselect off' : 'Multiselect'; $('#selmode').classList.toggle('off', on);
   $('#vsel').classList.toggle('on', sel.has(cur));
 }
 
